@@ -16,7 +16,7 @@
     const $ = (id) => document.getElementById(id);
     const V = (e, n, u) => new THREE.Vector3(e, u, -n);
     const Q = (q) => new THREE.Quaternion(q[1], q[3], -q[2], q[0]);
-    const AFF_COL = [0xffe63c, 0x50c8ff, 0xff3c3c, 0x8cff78];
+    const AFF_COL = [0xffe63c, 0x38bdf8, 0xff6b6b, 0x8cff78]; // RF SIM friendly/enemy hues
 
     function makeRenderer(host) {
       const r = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -39,17 +39,17 @@
     // ============================================================ world (simulator)
     const worldHost = $("worldView"), eyeHost = $("eyeView");
     const world = new THREE.Scene();
-    world.background = new THREE.Color(0x0b1016);
-    world.fog = new THREE.Fog(0x0b1016, 3000, 9000);
+    world.background = new THREE.Color(0x020202);
+    world.fog = new THREE.Fog(0x020202, 3000, 9000);
     world.add(new THREE.HemisphereLight(0xbfd9ff, 0x223322, 1.1));
     const sun = new THREE.DirectionalLight(0xffffff, 1.2);
     sun.position.set(2000, 3000, 1000);
     world.add(sun);
 
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(12000, 12000), new THREE.MeshLambertMaterial({ color: 0x1b2a1f }));
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(12000, 12000), new THREE.MeshLambertMaterial({ color: 0x0b0b0b }));
     ground.rotation.x = -Math.PI / 2;
     world.add(ground);
-    const grid = new THREE.GridHelper(8000, 80, 0x2e4a36, 0x223528);
+    const grid = new THREE.GridHelper(8000, 80, 0x3a3a3a, 0x1a1a1a);
     grid.position.y = 0.2;
     world.add(grid);
 
@@ -78,7 +78,7 @@
     const rings = new THREE.Group();
     [500, 1000, 2000].forEach((r) => {
       const g = new THREE.RingGeometry(r - 2, r + 2, 128);
-      const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0x3f6f4f, side: THREE.DoubleSide, transparent: true, opacity: 0.6 }));
+      const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0x5f5f5f, side: THREE.DoubleSide, transparent: true, opacity: 0.6 }));
       m.rotation.x = -Math.PI / 2;
       m.position.y = 0.5;
       rings.add(m);
@@ -130,7 +130,7 @@
       world.add(line);
       return line;
     }
-    const fTrue = frustum(0x00ff5a, 600), fHud = frustum(0xffaa00, 600);
+    const fTrue = frustum(0x34d399, 600), fHud = frustum(0xf7b955, 600);
     function setFrustum(line, pos, q, hfov, vfov) {
       const L = line.userData.len, th = Math.tan((hfov / 2) * H.D2R), tv = Math.tan((vfov / 2) * H.D2R);
       const corners = [[-th, tv], [th, tv], [th, -tv], [-th, -tv]].map(([x, z]) => {
@@ -143,7 +143,7 @@
       line.geometry.setFromPoints(pts);
     }
 
-    const uavPath = new THREE.Mesh(new THREE.TorusGeometry(600, 1.5, 6, 128), new THREE.MeshBasicMaterial({ color: 0x50c8ff, transparent: true, opacity: 0.35 }));
+    const uavPath = new THREE.Mesh(new THREE.TorusGeometry(600, 1.5, 6, 128), new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.35 }));
     uavPath.rotation.x = Math.PI / 2;
     world.add(uavPath);
 
@@ -201,7 +201,7 @@
     // ============================================================ hardware viewer
     const hwHost = $("hwView");
     const hw = new THREE.Scene();
-    hw.background = new THREE.Color(0x0d1210);
+    hw.background = new THREE.Color(0x020202);
     hw.add(new THREE.HemisphereLight(0xffffff, 0x445544, 1.8));
     hw.add(new THREE.AmbientLight(0xffffff, 0.35));
     const key = new THREE.DirectionalLight(0xffffff, 1.4);
@@ -349,7 +349,7 @@
     // ============================================================ live attitude view
     const attHost = $("liveAttView");
     const att = new THREE.Scene();
-    att.background = new THREE.Color(0x0d1210);
+    att.background = new THREE.Color(0x020202);
     att.add(new THREE.HemisphereLight(0xffffff, 0x334433, 1.1));
     const attCam = new THREE.PerspectiveCamera(40, 1, 0.01, 50);
     attCam.position.set(1.4, 1.0, 1.6);
@@ -360,13 +360,13 @@
     const pr = new THREE.Mesh(B(25, 25, 25), new THREE.MeshStandardMaterial({ color: 0x9fd9ff, transparent: true, opacity: 0.35 }));
     pr.position.y = 19 * mm;
     dev.add(pr);
-    const fwd = new THREE.ArrowHelper(new THREE.Vector3(0, 0, -1), new THREE.Vector3(0, 0.2, 0), 0.7, 0x00ff5a, 0.1, 0.06);
+    const fwd = new THREE.ArrowHelper(new THREE.Vector3(0, 0, -1), new THREE.Vector3(0, 0.2, 0), 0.7, 0x34d399, 0.1, 0.06);
     dev.add(fwd);
     att.add(dev);
     att.add(new THREE.AxesHelper(0.9));
-    const nLab = new THREE.ArrowHelper(new THREE.Vector3(0, 0, -1), new THREE.Vector3(0, -0.3, 0), 0.9, 0x5f7fff, 0.08, 0.05);
+    const nLab = new THREE.ArrowHelper(new THREE.Vector3(0, 0, -1), new THREE.Vector3(0, -0.3, 0), 0.9, 0x38bdf8, 0.08, 0.05);
     att.add(nLab);
-    att.add(new THREE.GridHelper(2, 8, 0x2e4a36, 0x223528));
+    att.add(new THREE.GridHelper(2, 8, 0x3a3a3a, 0x1a1a1a));
 
     // ============================================================ loop
     function frame() {
