@@ -1,0 +1,24 @@
+# ESP-IDF
+firmware/build/
+firmware/sdkconfig
+firmware/sdkconfig.old
+firmware/managed_components/
+firmware/dependencies.lock
+firmware/test_host/hud_tests
+firmware/test_host/hud_tests.exe
+
+# Provisioning secrets - never commit certificates or keys
+provisioning/
+*.p12
+*.pem
+*.key
+*.crt
+nvs_*.bin
+hudcfg*.csv
+
+# Python / editors
+__pycache__/
+*.pyc
+.venv/
+.vscode/
+.idea/
