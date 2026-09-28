@@ -150,7 +150,7 @@ static void render_task(void *arg)
             snprintf(s_status[6], 40, "TRACKS %d  COT %lu", total, (unsigned long)g_app.cot_rx);
             snprintf(s_status[7], 40, "MESH %lu UDP %lu", (unsigned long)g_app.mesh_rx, (unsigned long)g_app.udp_rx);
             snprintf(s_status[8], 40, "FPS %.0f  FOV %.0fx%.0f", fps, g_cfg.hfov_deg, g_cfg.vfov_deg);
-            snprintf(s_status[9], 40, "%s", g_app.last_error);
+            snprintf(s_status[9], 40, "%s", g_app.last_error[0] ? g_app.last_error : g_app.hub_status);
             for (int i = 0; i < 10; i++) sc.status_lines[i] = s_status[i];
             sc.status_count = 10;
         }

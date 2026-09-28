@@ -116,3 +116,20 @@ void app_ingest_cot(const hud_cot_event_t *ev, const char *via)
     hud_targets_upsert(g_app.targets, ev, app_mono_ms(), app_utc_ms());
     app_unlock();
 }
+
+void app_ingest_track(const char *uid, const char *type, double lat, double lon, double hae, int stale_s,
+                      const char *callsign, const char *via)
+{
+    hud_cot_event_t ev = {0};
+    snprintf(ev.uid, sizeof(ev.uid), "%s", uid);
+    snprintf(ev.type, sizeof(ev.type), "%s", type);
+    snprintf(ev.callsign, sizeof(ev.callsign), "%s", callsign && callsign[0] ? callsign : uid);
+    ev.lat = lat;
+    ev.lon = lon;
+    ev.hae = hae;
+    ev.time_ms = 1;
+    ev.stale_ms = 1 + (int64_t)(stale_s > 0 ? stale_s : 30) * 1000;
+    ev.affil = hud_cot_affil_from_type(ev.type);
+    ev.dim = hud_cot_dim_from_type(ev.type);
+    app_ingest_cot(&ev, via);
+}

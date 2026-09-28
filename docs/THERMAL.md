@@ -39,7 +39,15 @@ composite video for a cheap monitor. You need the VPC regardless:
 | **VPC USB → ESP32-P4 (USB-HS host, UVC)** | Needs the P4 (V3 option B) | 30-60 Hz, hardware scaling/blend | New MCU board; P4's `usb_host_uvc` supports YUY2/MJPEG |
 | VPC USB → Raspberry Pi/laptop (companion) | Doesn't use the S3 for video | 60 Hz | Easiest for experiments |
 
-**Recommendation:**
+**Recommendation (updated):** build the **V2H USB-C hub backpack**
+([hardware/hub_backpack](../hardware/hub_backpack/README.md)). An ESP32-P4
+on the backpack powers the Boson and hosts its USB video (via the VPC on a
+USB-C port, later directly on the 80-pin connector), crops and scales it to
+the HUD's field of view, and streams 240×240 frames to the HUD over SPI.
+The ATAK phone plugs into the same backpack. The Boson also exposes native
+USB2 (UVC) on its 80-pin connector, so a later revision can drop the VPC.
+
+Earlier steps still apply:
 1. **Now:** order the VPC and try it on a laptop to verify the camera and
    the 50° FOV, and set it to 8-bit CMOS output with the averager on.
 2. **HUD prototype:** the firmware already has the overlay pipeline (below).

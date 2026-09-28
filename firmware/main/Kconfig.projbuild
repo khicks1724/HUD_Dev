@@ -93,6 +93,15 @@ menu "TAK HUD"
         bool "Backpack board fitted (GNSS + magnetometer on header)"
         default n
 
+    config HUD_HUB
+        bool "Hub backpack fitted (V2H: ESP32-P4 USB-C hub, Boson, phone, battery)"
+        depends on !HUD_BACKPACK
+        default n
+        help
+            Enables the UART1 line link and the SPI3-slave thermal frame
+            receiver on the Waveshare header (hardware/hub_backpack/README.md).
+            Incompatible with the V2 backpack pin map.
+
     choice HUD_THERMAL_SOURCE
         prompt "Thermal underlay source"
         default HUD_THERMAL_NONE

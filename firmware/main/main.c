@@ -15,6 +15,7 @@
 #include "esp_log.h"
 #include "fake_targets.h"
 #include "gnss_task.h"
+#include "hub_link.h"
 #include "hud_config.h"
 #include "imu_task.h"
 #include "mesh_rx.h"
@@ -44,6 +45,7 @@ void app_main(void)
     thermal_start();
     fake_targets_start();
     gnss_task_start();
+    hub_link_start();
     button_start();
 
     net_wifi_start();

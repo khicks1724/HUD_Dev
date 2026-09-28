@@ -93,9 +93,21 @@ void thermal_start(void)
 #endif
 }
 
+static hud_thermal_t s_ext;
+static volatile bool s_ext_valid;
+
+void thermal_publish_external(const uint8_t *px, int w, int h, uint8_t hot_threshold)
+{
+    /* The hub already cropped to the HUD FOV: show the whole frame. */
+    s_ext = (hud_thermal_t){px, w, h, 0, 0, w, h, hot_threshold};
+    s_ext_valid = true;
+    s_available = true;
+}
+
 const hud_thermal_t *thermal_latest(void)
 {
-    if (!s_available) return NULL;
+    if (s_ext_valid) return &s_ext;
+    if (!s_available || !s_frame[s_front]) return NULL;
     s_desc.px = s_frame[s_front];
     return &s_desc;
 }

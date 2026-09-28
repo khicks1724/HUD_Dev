@@ -20,5 +20,9 @@ const hud_thermal_t *thermal_latest(void);
 
 bool thermal_available(void);
 
+/* A full, already-cropped frame from another source (the hub backpack).
+ * The buffer must stay valid until the next call. */
+void thermal_publish_external(const uint8_t *px, int w, int h, uint8_t hot_threshold);
+
 /* Cycle OFF -> FULL -> HOT -> OFF. */
 void thermal_cycle_mode(void);

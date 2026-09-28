@@ -202,12 +202,17 @@ static void imu_task(void *arg)
         return;
     }
 
-#if CONFIG_HUD_BACKPACK
+#if CONFIG_HUD_BACKPACK || CONFIG_HUD_HUB
     i2c_master_bus_handle_t bus2;
     const i2c_master_bus_config_t bc2 = {
         .i2c_port = I2C_NUM_1,
+#if CONFIG_HUD_HUB
+        .sda_io_num = HUB_I2C_SDA,
+        .scl_io_num = HUB_I2C_SCL,
+#else
         .sda_io_num = BACKPACK_I2C_SDA,
         .scl_io_num = BACKPACK_I2C_SCL,
+#endif
         .clk_source = I2C_CLK_SRC_DEFAULT,
         .glitch_ignore_cnt = 7,
         .flags.enable_internal_pullup = true,
@@ -259,7 +264,7 @@ static void imu_task(void *arg)
         const float an = sqrtf(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z);
         const bool acc_ok = fabsf(an - 1.0f) < 0.15f;
 
-#if CONFIG_HUD_BACKPACK
+#if CONFIG_HUD_BACKPACK || CONFIG_HUD_HUB
         if (mmc5983_present() && ++mag_div >= 2) { /* 100 Hz */
             mag_div = 0;
             mmc5983_sample_t ms;

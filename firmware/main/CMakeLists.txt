@@ -13,6 +13,7 @@ idf_component_register(
         "button.c"
         "thermal.c"
         "telemetry.c"
+        "hub_link.c"
         "console_cmds.c"
     INCLUDE_DIRS "."
     REQUIRES hud_core drivers nvs_flash esp_wifi esp_netif esp_event esp-tls esp_http_server

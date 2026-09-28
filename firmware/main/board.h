@@ -39,6 +39,16 @@
 #define BOARD_VBAT_ADC      GPIO_NUM_6    /* VBAT through 100k/100k divider (x2) */
 #define BOARD_RST_CONTROL   GPIO_NUM_19   /* drives CHIP_EN via NPN: never drive high */
 
+/* V2H hub backpack (CONFIG_HUD_HUB), hardware/hub_backpack/README.md */
+#define HUB_UART_RX         GPIO_NUM_12   /* hub -> HUD lines */
+#define HUB_UART_TX         GPIO_NUM_13
+#define HUB_SPI_CLK         GPIO_NUM_10   /* thermal frames, S3 is SPI slave */
+#define HUB_SPI_MOSI        GPIO_NUM_11
+#define HUB_SPI_CS          GPIO_NUM_9
+#define HUB_READY           GPIO_NUM_14   /* HUD -> hub: receive buffer queued */
+#define HUB_I2C_SDA         GPIO_NUM_1    /* magnetometer on the hub board */
+#define HUB_I2C_SCL         GPIO_NUM_2
+
 /*
  * Header pins free for the backpack board (H1/H2): GPIO1-5, 7-14.
  * Assignments used by hardware/backpack (see hardware/backpack/README.md):

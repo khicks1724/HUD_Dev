@@ -8,7 +8,8 @@ power budgets and layout rules, meant to be captured in KiCad next.
 |---|---|---|
 | V1 | Waveshare ESP32-S3-LCD-1.3-C alone (+ ATAK phone) | Proves the HUD. Phone supplies own position (TAK, mesh or USB). |
 | V2 | **Backpack board** on the Waveshare header ([backpack/](backpack/README.md)) | Adds GNSS, magnetometer, fuel gauge, second button, haptic. Standalone HUD. |
-| V2T | **Thermal backpack** variant ([backpack/README.md#thermal-variant-v2t](backpack/README.md#thermal-variant-v2t)) | Adds the FLIR Boson on the same header. Uses every free pin. |
+| **V2H** | **USB-C hub backpack (recommended)** ([hub_backpack/](hub_backpack/README.md)) | Battery + power for everything, Boson on USB-C, ATAK phone on USB-C, ESP32-P4 hosts the camera and feeds cropped thermal + tracks to the HUD. |
+| V2T | Thermal backpack variant ([backpack/README.md#thermal-variant-v2t](backpack/README.md#thermal-variant-v2t)) | Superseded by V2H. Boson parallel video straight into the S3, uses every free pin and leaves no USB for the phone. |
 | V3 | **Integrated HUD core board** ([core_board/](core_board/README.md)) | One PCB: MCU, sensors, power, Boson connector, display FPC, rail mount. |
 
 ## The constraint that drives everything: pins
@@ -49,5 +50,6 @@ from the Waveshare LDO**: V2T adds its own buck-boost from VBAT.
 Files:
 - [backpack/README.md](backpack/README.md): V2/V2T schematic plan, pin map, layout rules
 - [backpack/bom.csv](backpack/bom.csv): BOM
+- [hub_backpack/README.md](hub_backpack/README.md): **V2H USB-C hub backpack** (recommended) + [bom.csv](hub_backpack/bom.csv)
 - [core_board/README.md](core_board/README.md): V3 integrated board
 - [mount/README.md](mount/README.md): Picatinny / M-LOK rail mount concept

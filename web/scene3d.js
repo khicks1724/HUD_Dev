@@ -278,12 +278,48 @@
     eyep.rotation.z = Math.PI / 2;
     hw.add(rail);
 
+
+    // Hub build (V2H): Waveshare head on the hub backpack, 3 USB-C ports,
+    // ESP32-P4, 2x18650, Boson+VPC and the ATAK phone on cables.
+    const hub = new THREE.Group();
+    part(hub, "Waveshare HUD head (ESP32-S3)", "Display, IMU, Wi-Fi/TAK and renderer. Powered with 5 V from the hub via its USB VCC header pin.",
+      B(40, 12, 40), 0x2a2f36, [0, 30, 0], [0, 40, 0]);
+    part(hub, "Prism", "Beam splitter over the LCD.", B(25, 25, 25), 0x9fd9ff, [0, 48.5, 0], [0, 70, 0],
+      { transparent: true, opacity: 0.28, roughness: 0.05 });
+    part(hub, "Hub backpack PCB (V2H)", "Charger + power path, 5 V boost, 3.3 V buck-boost, 3 USB-C ports, header link to the HUD. hardware/hub_backpack/.",
+      B(70, 1.6, 50), 0x0f5a2a, [0, 20, 0], [0, 10, 0]);
+    part(hub, "ESP32-P4 hub processor", "USB-HS host for the Boson (UVC), FS device to the phone (CDC), crops/scales thermal to 240x240 and streams it to the HUD over SPI.",
+      B(18, 3, 18), 0x333a40, [-18, 22.3, 8], [-10, 20, 10], { metalness: 0.3 });
+    part(hub, "SAM-M10Q GNSS", "Own position when the phone is unplugged; UTC for TLS.", B(15.5, 6.3, 15.5), 0xc9a44a, [20, 24, 12], [20, 25, 10], { metalness: 0.6 });
+    part(hub, "USB-C CAM (host, 5 V out)", "Boson VPC plugs in here. 1.5 A current-limited VBUS (TPS25200).", B(9, 3.2, 7.5), 0xb0b0b0, [35, 18, -12], [25, 0, 0], { metalness: 0.8 });
+    part(hub, "USB-C PHONE (device)", "ATAK phone: CDC serial for tracks/own position; optional UVC thermal preview.", B(9, 3.2, 7.5), 0xb0b0b0, [35, 18, 0], [25, 0, 0], { metalness: 0.8 });
+    part(hub, "USB-C PWR IN (charge)", "5 V/3 A charging; system keeps running (power path).", B(9, 3.2, 7.5), 0xb0b0b0, [35, 18, 12], [25, 0, 0], { metalness: 0.8 });
+    [-10, 10].forEach((z, i) => {
+      const c = part(hub, "18650 Li-ion cell " + (i + 1), "1S2P pack, 6-7 Ah (~25 Wh): ~7-8 h with thermal on.",
+        new THREE.CylinderGeometry(9 * mm, 9 * mm, 65 * mm, 24), 0x3565a8, [0, 9, z], [0, -25, z * 1.5], { metalness: 0.4 });
+      c.rotation.z = Math.PI / 2;
+    });
+    part(hub, "FLIR Boson 640 + lens", "Powered and read over USB by the hub (VPC now; direct 80-pin connector later).",
+      B(21, 21, 21), 0x6d6d6d, [95, 20, -40], [30, 0, -20], { metalness: 0.4 });
+    part(hub, "Boson USB VPC (421-0061-00)", "USB-C video/power/control board behind the camera.", B(21, 4, 21), 0x0f5a2a, [95, 7, -40], [30, -8, -20]);
+    part(hub, "ATAK phone", "USB-C to the PHONE port. The plugin sends tracks and its GPS; the HUD sends back attitude.",
+      B(75, 8, 160), 0x111418, [-40, 4, 110], [-30, 0, 40], { roughness: 0.3 });
+    function cable(a, b) {
+      const pts = [a, new THREE.Vector3((a.x + b.x) / 2, Math.min(a.y, b.y) - 10, (a.z + b.z) / 2), b].map((v) => v.clone().multiplyScalar(mm));
+      hub.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 1.6 * mm, 8), new THREE.MeshStandardMaterial({ color: 0x222222 })));
+    }
+    cable(new THREE.Vector3(40, 18, -12), new THREE.Vector3(95, 7, -30));
+    cable(new THREE.Vector3(40, 18, 0), new THREE.Vector3(-10, 6, 40));
+    hw.add(hub);
+
     let explode = 0;
     function setBuild(which) {
       desk.visible = which === "desk";
       rail.visible = which === "rail";
-      hwCam.position.set(which === "desk" ? 1.2 : 1.9, which === "desk" ? 0.9 : 1.1, which === "desk" ? 1.3 : 2.0);
-      hwCtl.target.set(0, which === "desk" ? 0.05 : 0.3, 0);
+      hub.visible = which === "hub";
+      const cam = { desk: [1.2, 0.9, 1.3], rail: [1.9, 1.1, 2.0], hub: [2.2, 1.6, 2.3] }[which];
+      hwCam.position.set(cam[0], cam[1], cam[2]);
+      hwCtl.target.set(which === "hub" ? 0.2 : 0, which === "desk" ? 0.05 : which === "hub" ? 0.1 : 0.3, which === "hub" ? 0.2 : 0);
       hwCtl.update();
     }
     document.querySelectorAll("[data-build]").forEach((b) =>
@@ -293,7 +329,7 @@
       })
     );
     $("explode").addEventListener("input", (e) => (explode = parseFloat(e.target.value)));
-    setBuild("desk");
+    setBuild("hub");
 
     const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
     let picked = null;

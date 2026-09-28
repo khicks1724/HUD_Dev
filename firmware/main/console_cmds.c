@@ -145,23 +145,14 @@ static int cmd_trk(int argc, char **argv)
 ");
         return 1;
     }
-    hud_cot_event_t ev = {0};
-    snprintf(ev.uid, sizeof(ev.uid), "%s", argv[1]);
-    snprintf(ev.type, sizeof(ev.type), "%s", argv[2]);
-    ev.lat = atof(argv[3]);
-    ev.lon = atof(argv[4]);
-    ev.hae = atof(argv[5]);
-    ev.time_ms = 1;
-    ev.stale_ms = 1 + (int64_t)atoi(argv[6]) * 1000;
+    char cs[HUD_COT_CALLSIGN_LEN] = "";
     size_t used = 0;
-    for (int i = 7; i < argc && used + 1 < sizeof(ev.callsign); i++) {
-        const int n = snprintf(ev.callsign + used, sizeof(ev.callsign) - used, "%s%s", i > 7 ? " " : "", argv[i]);
+    for (int i = 7; i < argc && used + 1 < sizeof(cs); i++) {
+        const int n = snprintf(cs + used, sizeof(cs) - used, "%s%s", i > 7 ? " " : "", argv[i]);
         if (n < 0) break;
         used += (size_t)n;
     }
-    ev.affil = hud_cot_affil_from_type(ev.type);
-    ev.dim = hud_cot_dim_from_type(ev.type);
-    app_ingest_cot(&ev, "usb");
+    app_ingest_track(argv[1], argv[2], atof(argv[3]), atof(argv[4]), atof(argv[5]), atoi(argv[6]), cs, "usb");
     return 0;
 }
 

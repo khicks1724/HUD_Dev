@@ -38,6 +38,7 @@ typedef struct {
     hud_mode_t mode;
     hud_thermal_mode_t thermal_mode;
     char last_error[48];
+    char hub_status[40]; /* last status line from the hub backpack */
 } app_state_t;
 
 extern app_state_t g_app;
@@ -55,6 +56,10 @@ void app_ingest_cot(const hud_cot_event_t *ev, const char *via);
 
 /* Set own position from any source. Takes the lock. */
 void app_set_own(double lat, double lon, double hae, pos_src_t src);
+
+/* Track from a line protocol (USB console "trk", hub UART). */
+void app_ingest_track(const char *uid, const char *type, double lat, double lon, double hae, int stale_s,
+                      const char *callsign, const char *via);
 
 const char *app_pos_src_name(pos_src_t s);
 void app_set_error(const char *msg);
