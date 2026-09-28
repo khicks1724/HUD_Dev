@@ -147,7 +147,7 @@
 
   const rgb = (r, g, b) => ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0; // little-endian RGBA in a Uint32
   const C = {
-    BLACK: rgb(0, 0, 0), WHITE: rgb(255, 255, 255), GREEN: rgb(0, 255, 90), DIMGRN: rgb(0, 110, 40),
+    BLACK: rgb(0, 0, 0), WHITE: rgb(255, 255, 255), ACCENT: rgb(255, 255, 255), ACCENT_DIM: rgb(125, 125, 125),
     CYAN: rgb(80, 200, 255), RED: rgb(255, 60, 60), LIME: rgb(140, 255, 120), YELLOW: rgb(255, 230, 60), AMBER: rgb(255, 170, 0),
   };
 
@@ -239,18 +239,18 @@
       const x = Math.round(p.cx + p.fx * Math.tan((d - heading) * D2R));
       const hd = ((d % 360) + 360) % 360;
       if (hd % 10 === 0) {
-        g.vline(x, 0, 6, C.GREEN);
+        g.vline(x, 0, 6, C.ACCENT);
         if (Math.abs(x - (p.cx | 0)) > 18) {
           const card = { 0: "N", 90: "E", 180: "S", 270: "W" }[hd];
-          g.textC(x, 8, card || String(hd / 10), C.GREEN, 1);
+          g.textC(x, 8, card || String(hd / 10), C.ACCENT, 1);
         }
-      } else g.vline(x, 0, 3, C.DIMGRN);
+      } else g.vline(x, 0, 3, C.ACCENT_DIM);
     }
     const cx = p.cx | 0;
     g.fillRect(cx - 13, 7, 27, 11, C.BLACK);
-    g.rect(cx - 13, 6, 27, 13, C.GREEN);
+    g.rect(cx - 13, 6, 27, 13, C.ACCENT);
     g.textC(cx + 1, 9, String(Math.round(heading) % 360).padStart(3, "0"), C.WHITE, 1);
-    g.triangle(cx - 3, TAPE_H - 2, cx + 3, TAPE_H - 2, cx, TAPE_H + 1, C.GREEN);
+    g.triangle(cx - 3, TAPE_H - 2, cx + 3, TAPE_H - 2, cx, TAPE_H + 1, C.ACCENT);
   }
 
   function drawWorldLine(g, s, heading, el, halfw, c, dashed) {
@@ -266,22 +266,22 @@
   function drawHorizon(g, s, heading) {
     const P = (h) => project(s.q, dirEnu(h, 0), s.proj);
     const a = P(heading - 60), b = P(heading - 4), c = P(heading + 4), d = P(heading + 60);
-    if (a.inFront && b.inFront) g.line(a.sx, a.sy, b.sx, b.sy, C.DIMGRN);
-    if (c.inFront && d.inFront) g.line(c.sx, c.sy, d.sx, d.sy, C.DIMGRN);
-    for (let el = -20; el <= 20; el += 10) if (el) drawWorldLine(g, s, heading, el, 3, C.DIMGRN, el < 0);
+    if (a.inFront && b.inFront) g.line(a.sx, a.sy, b.sx, b.sy, C.ACCENT_DIM);
+    if (c.inFront && d.inFront) g.line(c.sx, c.sy, d.sx, d.sy, C.ACCENT_DIM);
+    for (let el = -20; el <= 20; el += 10) if (el) drawWorldLine(g, s, heading, el, 3, C.ACCENT_DIM, el < 0);
   }
 
   function drawBoresight(g, s) {
     const x = Math.round(s.proj.cx), y = Math.round(s.proj.cy);
-    g.hline(x - 10, y, 7, C.GREEN); g.hline(x + 4, y, 7, C.GREEN); g.vline(x, y - 10, 7, C.GREEN); g.vline(x, y + 4, 7, C.GREEN);
+    g.hline(x - 10, y, 7, C.ACCENT); g.hline(x + 4, y, 7, C.ACCENT); g.vline(x, y - 10, 7, C.ACCENT); g.vline(x, y + 4, 7, C.ACCENT);
   }
 
   function drawRadar(g, s, t, heading) {
     const R = 30, cx = g.w - R - 4, cy = g.h - R - 4;
-    g.circle(cx, cy, R, C.DIMGRN); g.pixel(cx, cy, C.GREEN);
+    g.circle(cx, cy, R, C.ACCENT_DIM); g.pixel(cx, cy, C.ACCENT);
     const half = Math.atan((s.proj.width * 0.5) / s.proj.fx);
-    g.line(cx, cy, cx + (R * Math.sin(-half) | 0), cy - (R * Math.cos(half) | 0), C.DIMGRN);
-    g.line(cx, cy, cx + (R * Math.sin(half) | 0), cy - (R * Math.cos(half) | 0), C.DIMGRN);
+    g.line(cx, cy, cx + (R * Math.sin(-half) | 0), cy - (R * Math.cos(half) | 0), C.ACCENT_DIM);
+    g.line(cx, cy, cx + (R * Math.sin(half) | 0), cy - (R * Math.cos(half) | 0), C.ACCENT_DIM);
     const h = heading * D2R, ch = Math.cos(h), sh = Math.sin(h);
     for (const tg of t) {
       const x = tg.enu[0] * ch - tg.enu[1] * sh, y = tg.enu[0] * sh + tg.enu[1] * ch, d = Math.hypot(x, y);
@@ -292,12 +292,12 @@
   }
 
   function drawStatusBar(g, s, shown, total) {
-    const lc = s.link === 2 ? C.GREEN : s.link === 1 ? C.AMBER : C.RED;
+    const lc = s.link === 2 ? C.ACCENT : s.link === 1 ? C.AMBER : C.RED;
     g.text(3, g.h - 30, s.link === 2 ? "TAK" : s.link === 1 ? "WIFI" : "NOLINK", lc, 1);
-    g.text(3, g.h - 20, `POS ${s.ownValid ? s.posSource : "----"}`, s.ownValid ? C.GREEN : C.RED, 1);
-    g.text(3, g.h - 10, `HDG ${s.hdgSource}`, C.GREEN, 1);
+    g.text(3, g.h - 20, `POS ${s.ownValid ? s.posSource : "----"}`, s.ownValid ? C.ACCENT : C.RED, 1);
+    g.text(3, g.h - 10, `HDG ${s.hdgSource}`, C.ACCENT, 1);
     const txt = `${shown}/${total}`;
-    g.text(g.w - 70 - g.textWidth(txt, 1), g.h - 10, txt, C.GREEN, 1);
+    g.text(g.w - 70 - g.textWidth(txt, 1), g.h - 10, txt, C.ACCENT, 1);
   }
 
   function drawTargets(g, s, t, labels) {
@@ -310,7 +310,7 @@
     items.sort((a, b) => b.r - a.r);
     let shown = 0;
     items.forEach(({ tg, r }, k) => {
-      const stale = (tg.age || 0) > 30, c = stale ? C.DIMGRN : affilColor(tg.affil);
+      const stale = (tg.age || 0) > 30, c = stale ? C.ACCENT_DIM : affilColor(tg.affil);
       const p = project(s.q, tg.enu, s.proj);
       const label = labels && (items.length - k) <= s.maxLabels;
       const rng = formatRange(r);
@@ -334,12 +334,12 @@
 
   function drawCalib(g, s) {
     const p = s.proj, cx = Math.round(p.cx), cy = Math.round(p.cy);
-    g.hline(0, cy, g.w, C.GREEN); g.vline(cx, 0, g.h, C.GREEN);
+    g.hline(0, cy, g.w, C.ACCENT); g.vline(cx, 0, g.h, C.ACCENT);
     for (let deg = -30; deg <= 30; deg += 5) {
       if (!deg) continue;
       const dx = p.fx * Math.tan(deg * D2R) | 0, dy = p.fy * Math.tan(deg * D2R) | 0, len = deg % 10 === 0 ? 8 : 4;
-      g.vline(cx + dx, cy - len / 2, len, C.GREEN); g.hline(cx - len / 2, cy - dy, len, C.GREEN);
-      if (deg % 10 === 0) { g.textC(cx + dx, cy + 6, String(deg), C.DIMGRN, 1); g.text(cx + 6, cy - dy - 3, String(deg), C.DIMGRN, 1); }
+      g.vline(cx + dx, cy - len / 2, len, C.ACCENT); g.hline(cx - len / 2, cy - dy, len, C.ACCENT);
+      if (deg % 10 === 0) { g.textC(cx + dx, cy + 6, String(deg), C.ACCENT_DIM, 1); g.text(cx + 6, cy - dy - 3, String(deg), C.ACCENT_DIM, 1); }
     }
     g.circle(cx, cy, 20, C.WHITE);
     g.textC(g.w / 2, 4, "BORESIGHT CAL", C.WHITE, 1);
@@ -357,7 +357,7 @@
         if (sx < 0 || sx >= th.w) continue;
         let v = th.px[sy * th.w + sx];
         if (hot) { if (v < th.hot) continue; v = 120 + ((v - th.hot) * 135 / (256 - th.hot) | 0); } else v = v * 3 / 4 | 0;
-        g.px[y * g.w + x] = rgb(v / 3 | 0, v, v / 3 | 0);
+        g.px[y * g.w + x] = rgb(v, v, v); // white-hot, black-cold
       }
     }
   }
@@ -371,7 +371,7 @@
     if (s.mode === MODE.CALIB) return drawCalib(g, s);
     if (s.mode === MODE.STATUS) {
       g.text(4, 4, "HUD STATUS", C.WHITE, 2);
-      (s.statusLines || []).forEach((l, i) => g.text(4, 26 + i * 12, l, C.GREEN, 1));
+      (s.statusLines || []).forEach((l, i) => g.text(4, 26 + i * 12, l, C.ACCENT, 1));
       return;
     }
     if (s.mode === MODE.MINIMAL) { drawBoresight(g, s); drawTargets(g, s, t, true); return; }

@@ -88,7 +88,7 @@ static void draw_heading_tape(gfx_t *g, const hud_scene_t *s, float heading)
         const int x = (int)(p->cx + p->fx * tanf(off * DEG2RADF) + 0.5f);
         const int hd = ((d % 360) + 360) % 360;
         if (hd % 10 == 0) {
-            gfx_vline(g, x, 0, 6, GFX_GREEN);
+            gfx_vline(g, x, 0, 6, GFX_ACCENT);
             if (abs(x - (int)p->cx) > 18) {
                 char lab[6];
                 const char *card = hd == 0 ? "N" : hd == 90 ? "E" : hd == 180 ? "S" : hd == 270 ? "W" : NULL;
@@ -97,10 +97,10 @@ static void draw_heading_tape(gfx_t *g, const hud_scene_t *s, float heading)
                 } else {
                     snprintf(lab, sizeof(lab), "%d", hd / 10);
                 }
-                gfx_text_c(g, x, 8, lab, GFX_GREEN, 1);
+                gfx_text_c(g, x, 8, lab, GFX_ACCENT, 1);
             }
         } else {
-            gfx_vline(g, x, 0, 3, GFX_DIMGRN);
+            gfx_vline(g, x, 0, 3, GFX_ACCENT_DIM);
         }
     }
     /* Centre readout box */
@@ -108,9 +108,9 @@ static void draw_heading_tape(gfx_t *g, const hud_scene_t *s, float heading)
     snprintf(buf, sizeof(buf), "%03d", ((int)(heading + 0.5f)) % 360);
     const int cx = (int)p->cx;
     gfx_fill_rect(g, cx - 13, 7, 27, 11, GFX_BLACK);
-    gfx_rect(g, cx - 13, 6, 27, 13, GFX_GREEN);
+    gfx_rect(g, cx - 13, 6, 27, 13, GFX_ACCENT);
     gfx_text_c(g, cx + 1, 9, buf, GFX_WHITE, 1);
-    gfx_triangle(g, cx - 3, TAPE_H - 2, cx + 3, TAPE_H - 2, cx, TAPE_H + 1, GFX_GREEN);
+    gfx_triangle(g, cx - 3, TAPE_H - 2, cx + 3, TAPE_H - 2, cx, TAPE_H + 1, GFX_ACCENT);
 }
 
 static void draw_world_line(gfx_t *g, const hud_scene_t *s, float heading, float elev, float half_width_deg,
@@ -141,32 +141,32 @@ static void draw_horizon(gfx_t *g, const hud_scene_t *s, float heading)
     hud_project(s->q, dir_enu(heading - 4, 0), &s->proj, &b);
     hud_project(s->q, dir_enu(heading + 4, 0), &s->proj, &c);
     hud_project(s->q, dir_enu(heading + 60, 0), &s->proj, &d);
-    if (a.in_front && b.in_front) gfx_line(g, (int)a.sx, (int)a.sy, (int)b.sx, (int)b.sy, GFX_DIMGRN);
-    if (c.in_front && d.in_front) gfx_line(g, (int)c.sx, (int)c.sy, (int)d.sx, (int)d.sy, GFX_DIMGRN);
+    if (a.in_front && b.in_front) gfx_line(g, (int)a.sx, (int)a.sy, (int)b.sx, (int)b.sy, GFX_ACCENT_DIM);
+    if (c.in_front && d.in_front) gfx_line(g, (int)c.sx, (int)c.sy, (int)d.sx, (int)d.sy, GFX_ACCENT_DIM);
     for (int el = -20; el <= 20; el += 10) {
         if (el == 0) continue;
-        draw_world_line(g, s, heading, (float)el, 3.0f, GFX_DIMGRN, el < 0);
+        draw_world_line(g, s, heading, (float)el, 3.0f, GFX_ACCENT_DIM, el < 0);
     }
 }
 
 static void draw_boresight(gfx_t *g, const hud_scene_t *s)
 {
     const int x = (int)(s->proj.cx + 0.5f), y = (int)(s->proj.cy + 0.5f);
-    gfx_hline(g, x - 10, y, 7, GFX_GREEN);
-    gfx_hline(g, x + 4, y, 7, GFX_GREEN);
-    gfx_vline(g, x, y - 10, 7, GFX_GREEN);
-    gfx_vline(g, x, y + 4, 7, GFX_GREEN);
+    gfx_hline(g, x - 10, y, 7, GFX_ACCENT);
+    gfx_hline(g, x + 4, y, 7, GFX_ACCENT);
+    gfx_vline(g, x, y - 10, 7, GFX_ACCENT);
+    gfx_vline(g, x, y + 4, 7, GFX_ACCENT);
 }
 
 static void draw_radar(gfx_t *g, const hud_scene_t *s, const hud_rtarget_t *t, int n, float heading)
 {
     const int R = 30, cx = g->w - R - 4, cy = g->h - R - 4;
-    gfx_circle(g, cx, cy, R, GFX_DIMGRN);
-    gfx_pixel(g, cx, cy, GFX_GREEN);
+    gfx_circle(g, cx, cy, R, GFX_ACCENT_DIM);
+    gfx_pixel(g, cx, cy, GFX_ACCENT);
     /* FOV wedge */
     const float half = atanf((s->proj.width * 0.5f) / s->proj.fx);
-    gfx_line(g, cx, cy, cx + (int)(R * sinf(-half)), cy - (int)(R * cosf(half)), GFX_DIMGRN);
-    gfx_line(g, cx, cy, cx + (int)(R * sinf(half)), cy - (int)(R * cosf(half)), GFX_DIMGRN);
+    gfx_line(g, cx, cy, cx + (int)(R * sinf(-half)), cy - (int)(R * cosf(half)), GFX_ACCENT_DIM);
+    gfx_line(g, cx, cy, cx + (int)(R * sinf(half)), cy - (int)(R * cosf(half)), GFX_ACCENT_DIM);
     const float h = heading * DEG2RADF, ch = cosf(h), sh = sinf(h);
     for (int i = 0; i < n; i++) {
         /* rotate ENU so current heading is up */
@@ -183,15 +183,15 @@ static void draw_radar(gfx_t *g, const hud_scene_t *s, const hud_rtarget_t *t, i
 static void draw_status_bar(gfx_t *g, const hud_scene_t *s, int shown, int total)
 {
     char buf[32];
-    const uint16_t link_c = s->link_state == 2 ? GFX_GREEN : s->link_state == 1 ? GFX_AMBER : GFX_RED;
+    const uint16_t link_c = s->link_state == 2 ? GFX_ACCENT : s->link_state == 1 ? GFX_AMBER : GFX_RED;
     const char *link = s->link_state == 2 ? "TAK" : s->link_state == 1 ? "WIFI" : "NOLINK";
     gfx_text(g, 3, g->h - 30, link, link_c, 1);
     snprintf(buf, sizeof(buf), "POS %s", s->own_pos_valid ? s->pos_source : "----");
-    gfx_text(g, 3, g->h - 20, buf, s->own_pos_valid ? GFX_GREEN : GFX_RED, 1);
+    gfx_text(g, 3, g->h - 20, buf, s->own_pos_valid ? GFX_ACCENT : GFX_RED, 1);
     snprintf(buf, sizeof(buf), "HDG %s", s->hdg_source);
-    gfx_text(g, 3, g->h - 10, buf, GFX_GREEN, 1);
+    gfx_text(g, 3, g->h - 10, buf, GFX_ACCENT, 1);
     snprintf(buf, sizeof(buf), "%d/%d", shown, total);
-    gfx_text(g, g->w - 70 - gfx_text_width(buf, 1), g->h - 10, buf, GFX_GREEN, 1);
+    gfx_text(g, g->w - 70 - gfx_text_width(buf, 1), g->h - 10, buf, GFX_ACCENT, 1);
 }
 
 typedef struct {
@@ -222,7 +222,7 @@ static int draw_targets(gfx_t *g, const hud_scene_t *s, const hud_rtarget_t *t, 
     for (int k = 0; k < m; k++) {
         const hud_rtarget_t *tg = &t[order[k].idx];
         const bool stale = tg->age_s > 30.0f;
-        const uint16_t c = stale ? GFX_DIMGRN : affil_color(tg->affil);
+        const uint16_t c = stale ? GFX_ACCENT_DIM : affil_color(tg->affil);
         hud_proj_t p;
         hud_project(s->q, tg->enu, &s->proj, &p);
         char rng[12];
@@ -259,20 +259,20 @@ static void draw_calib(gfx_t *g, const hud_scene_t *s)
 {
     const hud_proj_cfg_t *p = &s->proj;
     const int cx = (int)(p->cx + 0.5f), cy = (int)(p->cy + 0.5f);
-    gfx_hline(g, 0, cy, g->w, GFX_GREEN);
-    gfx_vline(g, cx, 0, g->h, GFX_GREEN);
+    gfx_hline(g, 0, cy, g->w, GFX_ACCENT);
+    gfx_vline(g, cx, 0, g->h, GFX_ACCENT);
     for (int deg = -30; deg <= 30; deg += 5) {
         if (deg == 0) continue;
         const int dx = (int)(p->fx * tanf(deg * DEG2RADF));
         const int dy = (int)(p->fy * tanf(deg * DEG2RADF));
         const int len = deg % 10 == 0 ? 8 : 4;
-        gfx_vline(g, cx + dx, cy - len / 2, len, GFX_GREEN);
-        gfx_hline(g, cx - len / 2, cy - dy, len, GFX_GREEN);
+        gfx_vline(g, cx + dx, cy - len / 2, len, GFX_ACCENT);
+        gfx_hline(g, cx - len / 2, cy - dy, len, GFX_ACCENT);
         if (deg % 10 == 0) {
             char b[6];
             snprintf(b, sizeof(b), "%d", deg);
-            gfx_text_c(g, cx + dx, cy + 6, b, GFX_DIMGRN, 1);
-            gfx_text(g, cx + 6, cy - dy - 3, b, GFX_DIMGRN, 1);
+            gfx_text_c(g, cx + dx, cy + 6, b, GFX_ACCENT_DIM, 1);
+            gfx_text(g, cx + 6, cy - dy - 3, b, GFX_ACCENT_DIM, 1);
         }
     }
     gfx_circle(g, cx, cy, 20, GFX_WHITE);
@@ -284,13 +284,12 @@ static void draw_status(gfx_t *g, const hud_scene_t *s)
 {
     gfx_text(g, 4, 4, "HUD STATUS", GFX_WHITE, 2);
     for (int i = 0; i < s->status_count && i < 10; i++) {
-        gfx_text(g, 4, 26 + i * 12, s->status_lines[i], GFX_GREEN, 1);
+        gfx_text(g, 4, 26 + i * 12, s->status_lines[i], GFX_ACCENT, 1);
     }
 }
 
-/* Nearest-neighbour scale of the thermal crop to the full screen. White-hot is
- * mapped to green so it reads like the rest of the symbology through the
- * prism; black stays black (transparent). */
+/* Nearest-neighbour scale of the thermal crop to the full screen, white-hot /
+ * black-cold greyscale. Black stays black, i.e. transparent in the prism. */
 static void draw_thermal(gfx_t *g, const hud_thermal_t *th, hud_thermal_mode_t mode)
 {
     if (!th || !th->px || th->src_w <= 0 || th->src_h <= 0) return;
@@ -310,7 +309,7 @@ static void draw_thermal(gfx_t *g, const hud_thermal_t *th, hud_thermal_mode_t m
             } else {
                 v = v * 3 / 4; /* keep symbology brighter than the underlay */
             }
-            out[x] = GFX_RGB(v / 3, v, v / 3);
+            out[x] = GFX_RGB(v, v, v); /* white-hot, black-cold */
         }
     }
 }

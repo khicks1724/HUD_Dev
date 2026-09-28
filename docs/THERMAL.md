@@ -67,7 +67,7 @@ Earlier steps still apply:
 | Mode | What you see through the prism |
 |---|---|
 | OFF | Symbology only |
-| FULL | The whole thermal image, dimmed to 75 % and tinted green, under the symbology |
+| FULL | The whole thermal image in white-hot greyscale, dimmed to 75 %, under the white symbology |
 | HOT | Only pixels above a threshold (e.g. people, engines). Everything else stays black, i.e. **see-through** in the prism |
 
 HOT mode is the useful one on a beam-splitter HUD: black pixels emit no

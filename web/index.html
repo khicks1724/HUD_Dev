@@ -26,16 +26,23 @@ code, .mono { font-family: var(--font-mono); }
 a { color: var(--info); }
 
 /* Top bar and tabs, attached to the viewport edge */
-header { display: flex; align-items: center; gap: 16px; height: 36px; padding: 0 16px; background: var(--bg-topbar); border-bottom: 1px solid var(--border); }
-header h1 { font-size: 13px; font-weight: 700; margin: 0; letter-spacing: .14em; text-transform: uppercase; }
-header .sub { color: var(--muted); font-size: 11px; }
-nav { display: flex; gap: 4px; padding: 6px 12px; background: var(--bg-base); border-bottom: 1px solid var(--border); overflow-x: auto; position: sticky; top: 0; z-index: 5; }
+header { background: var(--bg-topbar); border-bottom: 1px solid var(--border); }
+header .bar, nav .bar, main { max-width: 1760px; margin: 0 auto; padding-left: 16px; padding-right: 16px; }
+header .bar { display: flex; align-items: center; gap: 20px; height: 54px; }
+.brand { display: flex; align-items: center; text-decoration: none; }
+.logo { height: 40px; width: auto; display: block; }
+.lg-word { font: 700 17px var(--app-font-family); letter-spacing: .32em; fill: #f1f1f1; }
+.lg-slash { fill: #6f6f6f; font-weight: 400; }
+.lg-tiny { font: 600 5.5px var(--app-font-family); letter-spacing: .12em; fill: #8a8a8a; }
+header .sub { color: var(--muted); font-size: 11px; letter-spacing: .06em; margin-left: auto; text-transform: uppercase; }
+nav { background: var(--bg-base); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 5; }
+nav .bar { display: flex; gap: 4px; padding-top: 6px; padding-bottom: 6px; overflow-x: auto; }
 nav button { background: var(--control-bg); border: 1px solid var(--control-border); color: var(--text-secondary); padding: 4px 10px; border-radius: 4px; cursor: pointer; font: 11px var(--app-font-family); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
 nav button:hover { background: var(--control-bg-hover); border-color: var(--control-border-hover); color: var(--text); }
 nav button.active { background: var(--control-selected-bg); color: var(--control-selected-text); border-color: var(--control-selected-bg); }
 button:focus-visible, input:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 1px; }
 
-main { padding: 10px 16px 32px; max-width: 1760px; margin: 0 auto; }
+main { padding-top: 10px; padding-bottom: 32px; }
 section.tab { display: none; }
 section.tab.active { display: block; }
 h2 { font-size: 14px; font-weight: 600; margin: 2px 0 2px; letter-spacing: .02em; }
@@ -157,7 +164,7 @@ svg text { font-family: var(--app-font-family); }
 ul, ol { margin: 4px 0 8px 18px; padding: 0; color: var(--text-secondary); } li { margin: 3px 0; }
 @media (max-width: 1400px) { .gsim { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .gsim #worldView { height: 440px; } .glive { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); } }
 @media (max-width: 1100px) { .gdiag, .gtask { grid-template-columns: 1fr; } }
-@media (max-width: 760px) { .g2, .g3 { grid-template-columns: 1fr; } .controls { grid-template-columns: 88px 1fr 50px; } main { padding: 10px 16px 32px; max-width: 1760px; margin: 0 auto; } header .sub { display: none; } }
+@media (max-width: 760px) { .g2, .g3 { grid-template-columns: 1fr; } .controls { grid-template-columns: 88px 1fr 50px; } main { padding-top: 10px; padding-bottom: 32px; } header .sub { display: none; } }
 </style>
 <script type="importmap">
 { "imports": {
@@ -168,10 +175,37 @@ ul, ol { margin: 4px 0 8px 18px; padding: 0; color: var(--text-secondary); } li 
 </head>
 <body>
 <header>
-  <h1>TAK HUD</h1>
-  <div class="sub">Waveshare ESP32-S3-LCD-1.3-C prism · TAK/CoT · IMU · FLIR Boson · everything in <code>HUD_Dev/</code></div>
+  <div class="bar">
+  <a class="brand" href="#" aria-label="TAK HUD">
+    <svg class="logo" viewBox="0 0 214 34" role="img" aria-hidden="true">
+      <defs>
+        <radialGradient id="lgHeat" cx="42%" cy="46%" r="60%">
+          <stop offset="0" stop-color="#ffffff"/><stop offset=".35" stop-color="#bdbdbd"/>
+          <stop offset=".7" stop-color="#4a4a4a"/><stop offset="1" stop-color="#0a0a0a"/>
+        </radialGradient>
+        <linearGradient id="lgScale" x1="0" x2="1"><stop offset="0" stop-color="#000"/><stop offset="1" stop-color="#fff"/></linearGradient>
+        <clipPath id="lgClip"><rect x="3" y="3" width="28" height="28"/></clipPath>
+      </defs>
+      <!-- thermal "sensor window" with a white-hot target and reticle -->
+      <rect x="3" y="3" width="28" height="28" fill="#050505"/>
+      <g clip-path="url(#lgClip)"><circle cx="16" cy="18" r="13" fill="url(#lgHeat)"/>
+        <g fill="#000" opacity=".35"><rect x="3" y="7" width="28" height="1"/><rect x="3" y="12" width="28" height="1"/><rect x="3" y="17" width="28" height="1"/><rect x="3" y="22" width="28" height="1"/><rect x="3" y="27" width="28" height="1"/></g></g>
+      <path d="M3 9V3h6M25 3h6v6M31 25v6h-6M9 31H3v-6" fill="none" stroke="#fff" stroke-width="1.6"/>
+      <path d="M17 11v4M17 21v4M10 18h4M20 18h4" stroke="#fff" stroke-width="1.2"/>
+      <!-- wordmark -->
+      <text x="42" y="19" class="lg-word">TAK<tspan class="lg-slash">/</tspan>HUD</text>
+      <!-- heading tape under the wordmark + black→white thermal scale -->
+      <g stroke="#8a8a8a" stroke-width="1"><path d="M42 26.5h92"/>
+        <path d="M42 26.5v3M53.5 26.5v2M65 26.5v3M76.5 26.5v2M88 26.5v4M99.5 26.5v2M111 26.5v3M122.5 26.5v2M134 26.5v3"/></g>
+      <path d="M86 23.2l2 2.4 2-2.4z" fill="#fff"/>
+      <rect x="166" y="24.5" width="42" height="5" fill="url(#lgScale)" stroke="#5f5f5f" stroke-width=".6"/>
+      <text x="166" y="21" class="lg-tiny">COLD</text><text x="208" y="21" class="lg-tiny" text-anchor="end">HOT</text>
+    </svg>
+  </a>
+  <div class="sub">Waveshare ESP32-S3-LCD-1.3-C prism · TAK/CoT · IMU · FLIR Boson</div>
+  </div>
 </header>
-<nav>
+<nav><div class="bar">
   <button data-tab="overview">Overview</button>
   <button data-tab="sim">HUD Simulator</button>
   <button data-tab="live">Live HUD</button>
@@ -180,7 +214,7 @@ ul, ol { margin: 4px 0 8px 18px; padding: 0; color: var(--text-secondary); } li 
   <button data-tab="thermal">Thermal &amp; Rail</button>
   <button data-tab="firmware">Firmware</button>
   <button data-tab="roadmap">Roadmap</button>
-</nav>
+</div></nav>
 <main>
 
 <!-- ================================================================ OVERVIEW -->
