@@ -17,7 +17,7 @@
 #include "hud_render.h"
 #include "hud_targets.h"
 
-typedef enum { POS_NONE = 0, POS_FAKE, POS_MANUAL, POS_TAK, POS_UDP, POS_GNSS } pos_src_t;
+typedef enum { POS_NONE = 0, POS_FAKE, POS_MANUAL, POS_TAK, POS_UDP, POS_USB, POS_GNSS } pos_src_t;
 
 typedef struct {
     SemaphoreHandle_t lock;

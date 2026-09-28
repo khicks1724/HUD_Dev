@@ -51,6 +51,7 @@ const char *app_pos_src_name(pos_src_t s)
     case POS_MANUAL: return "MAN";
     case POS_TAK: return "TAK";
     case POS_UDP: return "UDP";
+    case POS_USB: return "USB";
     case POS_GNSS: return "GNSS";
     default: return "NONE";
     }
@@ -71,6 +72,7 @@ static int pos_priority(pos_src_t s)
     case POS_GNSS: return 5;
     case POS_TAK: return 4;
     case POS_UDP: return 3;
+    case POS_USB: return 4;
     case POS_MANUAL: return 2;
     case POS_FAKE: return 1;
     default: return 0;

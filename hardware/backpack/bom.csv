@@ -1,0 +1,19 @@
+Ref,Qty,Part,Manufacturer,Description,Variant,Approx unit USD,Notes
+U1,1,SAM-M10Q-00B,u-blox,GNSS module with integrated patch antenna (UART+I2C),V2 V2T,18,Check stock; MAX-M10S + patch is the smaller alternative
+U2,1,MMC5983MA,MEMSIC,3-axis magnetometer 18-bit I2C/SPI LGA16 3x3,V2 V2T,3,Place away from LiPo/motor/backlight
+U3,1,MAX17048G+T10,Analog Devices,1-cell fuel gauge I2C 0x36,V2 V2T,2,
+Q1,1,AO3400A,AOS,N-MOSFET for haptic motor,V2,0.1,
+D1,1,BAT54,Various,Flyback diode for ERM,V2,0.05,
+M1,1,10mm ERM coin motor,Various,Haptic alert,V2,1.5,Own ground return
+SW1,1,EC11E or 6mm tactile,Alps / Various,Encoder or button,V2,1.5,
+J1 J2,2,2.54mm female header,Various,Mates Waveshare GPIO headers,V2 V2T,0.5,Verify pin order vs schematic
+R1-R6,6,4.7k 0402,Various,I2C pull-ups / misc,V2 V2T,0.01,
+C1-C10,10,100n/1u/10u 0402-0805,Various,Decoupling,V2 V2T,0.02,
+U4,1,SN74AXC8T245RHLR,TI,8-bit 1.8V->3.3V translator (Boson data),V2T,1.5,DIR tied B->A
+U5,1,SN74AXC4T245RSVR,TI,4-bit translator (PCLK/VSYNC/HSYNC),V2T,1.0,
+U6,1,TPS63802DLAR,TI,Buck-boost 3.3V 2A for Boson,V2T,2.5,
+U7,1,TPS22918DBVR,TI,Load switch (camera power enable),V2T,0.5,Needs a GPIO: tie on or use I2C expander
+U8,1,TLV74018PDBVR,TI,1.8V LDO for translator A-side,V2T,0.3,
+J3,1,DF40HC(4.0)-80DS-0.4V(51),Hirose,80-pin 0.4mm receptacle for Boson,V2T,3,Fab-assemble recommended
+BT1,1,1S LiPo 1200-2000 mAh w/ PCM,Various,Battery (MX1.25 2-pin to Waveshare BAT),V2 V2T,8,Check connector polarity
+ACC1,1,Boson USB VPC Kit 421-0061-00,Teledyne FLIR,USB-C video/power/control for bench and camera config,bench,193,GroupGets

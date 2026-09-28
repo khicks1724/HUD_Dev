@@ -76,6 +76,41 @@ int main(void)
     hud_render(&g, &s, t, n);
     write_ppm("preview_calib.ppm", &g, 2);
 
+    /* Synthetic 640x512 thermal frame: cool sky, warm ground, two hot people
+     * placed where ALPHA1 and TGT-H1 project, to show the HOT underlay. */
+    static uint8_t th[640 * 512];
+    const float fx_cam = 320.0f / tanf(25.0f * 3.14159265f / 180.0f);
+    for (int y = 0; y < 512; y++)
+        for (int x = 0; x < 640; x++) th[y * 640 + x] = (uint8_t)(y < 250 ? 40 + y / 12 : 95 + (y - 250) / 8);
+    for (int k = 0; k < n; k++) {
+        if (units[k].a == HUD_AFFIL_NEUTRAL || units[k].d == HUD_DIM_AIR) continue;
+        hud_proj_t p;
+        hud_project(s.q, t[k].enu, &s.proj, &p);
+        if (!p.on_screen) continue;
+        /* HUD pixel -> camera pixel (same boresight, crop scale) */
+        const float ax = (p.sx - s.proj.cx) / s.proj.fx, ay = (p.sy - s.proj.cy) / s.proj.fy;
+        const int cx = (int)(320 + ax * fx_cam), cy = (int)(256 + ay * fx_cam);
+        for (int dy = -14; dy <= 14; dy++)
+            for (int dx = -6; dx <= 6; dx++) {
+                const int xx = cx + dx, yy = cy + dy;
+                if (xx >= 0 && xx < 640 && yy >= 0 && yy < 512) th[yy * 640 + xx] = (uint8_t)(235 - abs(dx) * 4 - abs(dy));
+            }
+    }
+    hud_thermal_t tf = {th, 640, 512, 0, 0, 0, 0, 170};
+    const float half = fx_cam * tanf(20.0f * 3.14159265f / 180.0f);
+    tf.src_w = tf.src_h = (int)(2 * half);
+    tf.src_x = (640 - tf.src_w) / 2;
+    tf.src_y = (512 - tf.src_h) / 2;
+    s.thermal = &tf;
+    s.mode = HUD_MODE_NORMAL;
+    s.thermal_mode = HUD_THERMAL_HOT;
+    hud_render(&g, &s, t, n);
+    write_ppm("preview_thermal_hot.ppm", &g, 2);
+    s.thermal_mode = HUD_THERMAL_FULL;
+    hud_render(&g, &s, t, n);
+    write_ppm("preview_thermal_full.ppm", &g, 2);
+    s.thermal_mode = HUD_THERMAL_OFF;
+
     s.mode = HUD_MODE_MINIMAL;
     hud_render(&g, &s, t, n);
     write_ppm("preview_minimal.ppm", &g, 2);

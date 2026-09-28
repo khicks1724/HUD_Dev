@@ -130,7 +130,49 @@ static int cmd_hdg(int argc, char **argv)
         printf("usage: hdg <true_heading_deg>   (snap current view heading)\n");
         return 1;
     }
-    imu_set_heading((float)atof(argv[1]), 1.0f, HDG_BORE);
+    const float gain = argc > 2 ? (float)atof(argv[2]) : 1.0f;
+    imu_set_heading((float)atof(argv[1]), gain, gain >= 1.0f ? HDG_BORE : HDG_PHONE);
+    return 0;
+}
+
+/* Input from a USB-attached ATAK phone (plugin writes these lines):
+ *   trk <uid> <type> <lat> <lon> <hae> <stale_s> <callsign...>
+ *   fix <lat> <lon> <hae>            (phone GPS = own position)          */
+static int cmd_trk(int argc, char **argv)
+{
+    if (argc < 8) {
+        printf("usage: trk <uid> <type> <lat> <lon> <hae> <stale_s> <callsign...>
+");
+        return 1;
+    }
+    hud_cot_event_t ev = {0};
+    snprintf(ev.uid, sizeof(ev.uid), "%s", argv[1]);
+    snprintf(ev.type, sizeof(ev.type), "%s", argv[2]);
+    ev.lat = atof(argv[3]);
+    ev.lon = atof(argv[4]);
+    ev.hae = atof(argv[5]);
+    ev.time_ms = 1;
+    ev.stale_ms = 1 + (int64_t)atoi(argv[6]) * 1000;
+    size_t used = 0;
+    for (int i = 7; i < argc && used + 1 < sizeof(ev.callsign); i++) {
+        const int n = snprintf(ev.callsign + used, sizeof(ev.callsign) - used, "%s%s", i > 7 ? " " : "", argv[i]);
+        if (n < 0) break;
+        used += (size_t)n;
+    }
+    ev.affil = hud_cot_affil_from_type(ev.type);
+    ev.dim = hud_cot_dim_from_type(ev.type);
+    app_ingest_cot(&ev, "usb");
+    return 0;
+}
+
+static int cmd_fix(int argc, char **argv)
+{
+    if (argc < 3) {
+        printf("usage: fix <lat> <lon> [hae]
+");
+        return 1;
+    }
+    app_set_own(atof(argv[1]), atof(argv[2]), argc > 3 ? atof(argv[3]) : 0.0, POS_USB);
     return 0;
 }
 
@@ -300,7 +342,9 @@ void console_start(void)
         {.command = "tak", .help = "tak <host> <port> <tcp|tls> [server_cn] | tak off", .func = cmd_tak},
         {.command = "own", .help = "own uid <ATAK uid> | own cs <callsign>: whose position is mine", .func = cmd_own},
         {.command = "pos", .help = "pos <lat> <lon> [hae] | pos off: manual own position", .func = cmd_pos},
-        {.command = "hdg", .help = "hdg <deg>: set current true heading", .func = cmd_hdg},
+        {.command = "hdg", .help = "hdg <deg> [gain]: set/nudge current true heading", .func = cmd_hdg},
+        {.command = "trk", .help = "trk <uid> <type> <lat> <lon> <hae> <stale_s> <callsign>: track from USB phone", .func = cmd_trk},
+        {.command = "fix", .help = "fix <lat> <lon> [hae]: own position from USB phone", .func = cmd_fix},
         {.command = "fake", .help = "fake on|off: simulated targets", .func = cmd_fake},
         {.command = "mesh", .help = "mesh on|off: ATAK SA multicast", .func = cmd_mesh},
         {.command = "stream", .help = "stream on|off [hz]: @HUD json lines for the web live view", .func = cmd_stream},
