@@ -282,32 +282,66 @@
       B(50, 8, 34), 0xc9ccd1, [0, 4, 0], [0, -25, 0], { metalness: 0.6, roughness: 0.35 }, { label: "LiPo" });
     hw.add(desk);
 
-    // ---------------------------------------------------------- rail build (V3 + Boson)
+    // ---------------------------------------------------------- rail build (clip-on ahead of an EOTech)
+    // +X is towards the muzzle. The holographic sight sits at the rear, closest
+    // to the eye; the HUD/thermal unit clips on in front of it and projects a
+    // collimated image back through the sight window (clip-on architecture).
     const rail = new THREE.Group();
-    const railBar = part(rail, "Picatinny rail (MIL-STD-1913)", "21.2 mm wide, slots 5.23 mm on a 10.01 mm pitch. M-LOK handguards take a short M-LOK-to-Picatinny section.",
-      B(260, 8, 21.2), 0x3c3f43, [0, 4, 0], [0, -10, 0], { metalness: 0.6, roughness: 0.4 }, { label: "Picatinny rail" });
-    for (let i = -12; i <= 12; i++) {
+    const RAIL_TOP = 8, AXIS_Y = RAIL_TOP + 36; // sight optical axis ≈36 mm over the rail (verify on your XPS2)
+    const railBar = part(rail, "Picatinny rail (MIL-STD-1913)", "21.2 mm wide, slots 5.23 mm on a 10.01 mm pitch. On an M-LOK handguard use a Picatinny section; the sight and clip-on both need the top rail for a common axis.",
+      B(300, 8, 21.2), 0x3c3f43, [0, 4, 0], [0, -10, 0], { metalness: 0.6, roughness: 0.4 }, { label: "Picatinny rail" });
+    for (let i = -14; i <= 14; i++) {
       const s = new THREE.Mesh(B(5.23, 3, 22), new THREE.MeshStandardMaterial({ color: 0x15171a }));
       s.position.set(i * 10.01 * mm, 3 * mm, 0);
       railBar.add(s);
     }
-    part(rail, "QD Picatinny clamp", "Lever clamp with recoil lug: repeatable return-to-zero, so HUD and thermal boresight survive remounting.",
-      B(40, 12, 34), 0x55595e, [0, 14, 0], [0, 10, 0], { metalness: 0.5 }, { label: "QD clamp" });
-    part(rail, "Housing (concept)", "Rigid chassis ties Boson, IMU and eyepiece together. hardware/mount/hud_rail_mount.scad.",
-      B(150, 46, 44), 0x9aa3ab, [0, 43, 0], [0, 60, 0], { transparent: true, opacity: 0.22, depthWrite: false }, { label: "Housing" });
-    part(rail, "FLIR Boson 640 (21640AS50)", "640×512 LWIR, 50° HFOV, 60 Hz, 1.8 V CMOS or USB via VPC. 500-1550 mW.",
-      B(21, 21, 21), 0x7d8288, [55, 48, 0], [60, 60, 0], { metalness: 0.5 }, { label: "Boson 640" });
-    const lens = part(rail, "Boson lens (50° HFOV)", "Short lens; the HUD crops the centre ~499 px to match a 40° display.",
-      new THREE.CylinderGeometry(8 * mm, 9 * mm, 18 * mm, 32), 0x202225, [74, 48, 0], [85, 60, 0], { metalness: 0.4 });
+
+    // EOTech XPS2-style holographic sight at the rear (≈89 × 53 × 64 mm)
+    const EX = -95;
+    part(rail, "Holographic sight (EOTech HWS XPS2), user side", "Your aiming optic stays closest to the eye and unchanged. 1× and parallax-free, so anything placed in front of it must present a collimated image (focused at infinity).",
+      B(89, 22, 44), 0x2e3136, [EX, RAIL_TOP + 11, 0], [0, 0, 0], { roughness: 0.5 }, { label: "EOTech XPS2 (user side)" });
+    const hoodMat = { roughness: 0.45, metalness: 0.2 };
+    part(rail, "Sight hood (left)", "Hood around the holographic window.", B(40, 44, 5), 0x2e3136, [EX + 20, RAIL_TOP + 22 + 22, 21], [0, 0, 0], hoodMat);
+    part(rail, "Sight hood (right)", "Hood around the holographic window.", B(40, 44, 5), 0x2e3136, [EX + 20, RAIL_TOP + 22 + 22, -21], [0, 0, 0], hoodMat);
+    part(rail, "Sight hood (top)", "Hood around the holographic window.", B(40, 5, 47), 0x2e3136, [EX + 20, RAIL_TOP + 22 + 44, 0], [0, 0, 0], hoodMat);
+    part(rail, "Holographic window", "≈30 × 23 mm clear aperture. The clip-on's output beam must fill it at the same height.",
+      B(3, 38, 37), 0x9fd7ff, [EX + 20, AXIS_Y, 0], [0, 0, 0], MAT.glass);
+    part(rail, "Sight battery housing", "Transverse battery cap.", new THREE.CylinderGeometry(11 * mm, 11 * mm, 53 * mm, 32), 0x2e3136, [EX - 22, RAIL_TOP + 11, 0], [0, 0, 0])
+      .rotation.x = Math.PI / 2;
+
+    // Clip-on HUD + thermal module in front
+    const CX = 40; // housing centre
+    part(rail, "Flip-to-side QD mount", "Lever-lock Picatinny base with a flip-to-side hinge: swing the clip-on out of the sight picture for day use, back in for thermal/TAK. Repeatable return keeps the boresight.",
+      B(40, 12, 34), 0x55595e, [CX - 10, RAIL_TOP + 6, 0], [0, 10, 0], { metalness: 0.5 }, { label: "Flip-to-side QD mount" });
+    part(rail, "Clip-on housing", "Rigid chassis: Boson, display, collimating lens and IMU share one frame bolted to the mount. hardware/mount/.",
+      B(120, 50, 48), 0x9aa3ab, [CX, AXIS_Y + 4, 0], [0, 60, 0], { transparent: true, opacity: 0.22, depthWrite: false }, { label: "Clip-on housing" });
+    part(rail, "FLIR Boson 640 (21640AS50)", "Faces downrange. For a true 1× overlay its FOV should match the clip-on display FOV (~15-20°): a 50° lens means cropping to the centre ~200 px; a narrower lens is a better match.",
+      B(21, 21, 21), 0x7d8288, [CX + 45, AXIS_Y, 0], [60, 60, 0], { metalness: 0.5 }, { label: "Boson 640" });
+    const lens = part(rail, "Boson lens", "50° HFOV lens (your 21640AS50).",
+      new THREE.CylinderGeometry(8 * mm, 9 * mm, 18 * mm, 32), 0x202225, [CX + 64, AXIS_Y, 0], [85, 60, 0], { metalness: 0.4 });
     lens.rotation.z = Math.PI / 2;
-    part(rail, "Boson USB VPC (421-0061-00)", "USB-C video/power/control. Bench + configuration; direct UVC input on an ESP32-P4.",
-      B(21, 4, 21), 0x1d6b3e, [36, 48, 0], [40, 60, 0], MAT.pcb, { label: "VPC" });
-    part(rail, "HUD core board (V3)", "ESP32-P4 + C6 recommended with thermal (USB-HS UVC, PPA blending); ESP32-S3 without.",
-      B(45, 2, 32), 0x1d6b3e, [-10, 36, 0], [0, 70, 0], MAT.pcb, { label: "Core board" });
-    part(rail, "LiPo 2000 mAh", "Low centre of gravity; ~4-5 h with the Boson.", B(70, 10, 36), 0xc9ccd1, [-5, 26, 0], [0, 30, 0], { metalness: 0.6 }, { label: "LiPo" });
-    const eyep = part(rail, "Micro-display + eyepiece", "Collimated view at rail eye relief (the Waveshare prism is a desk demo).",
-      new THREE.CylinderGeometry(13 * mm, 13 * mm, 30 * mm, 32), 0x2a2c30, [-90, 48, 0], [-110, 60, 0], null, { label: "Eyepiece" });
-    eyep.rotation.z = Math.PI / 2;
+    part(rail, "Micro-OLED display", "0.39-0.6\" micro-OLED facing the rear, placed at the focal point of the objective lens. Shows thermal + TAK symbology.",
+      B(3, 14, 18), 0x111214, [CX + 10, AXIS_Y, 0], [30, 60, 0], { roughness: 0.2 }, { label: "Micro-OLED" });
+    const obj = part(rail, "Collimating objective lens", "f ≈ 50 mm, clear aperture ≥ 32 mm. Puts the display image at infinity so it is parallax-free through the 1× sight, and fills the sight window.",
+      new THREE.CylinderGeometry(18 * mm, 18 * mm, 6 * mm, 48), 0x8fd3ff, [CX - 58, AXIS_Y, 0], [-20, 60, 0], MAT.glass, { label: "Collimating lens" });
+    obj.rotation.z = Math.PI / 2;
+    part(rail, "HUD core board (ESP32-P4 + C6)", "USB-HS UVC from the Boson (or DVP), PPA blend of thermal + TAK symbology, MIPI-DSI to the micro-OLED, Wi-Fi/TAK via the C6.",
+      B(45, 2, 32), 0x1d6b3e, [CX + 18, AXIS_Y - 20, 0], [0, 70, 0], MAT.pcb);
+    part(rail, "IMU + magnetometer", "On the rigid chassis. Magnetometer as high and far from steel as the housing allows.",
+      B(6, 2, 6), 0x222222, [CX + 30, AXIS_Y + 24, 0], [0, 90, 0], null);
+    part(rail, "LiPo 2000-3000 mAh", "Low in the housing for balance; ≈5-7 h with thermal on.",
+      B(60, 10, 36), 0xc9ccd1, [CX + 22, RAIL_TOP + 17, 0], [0, 30, 0], { metalness: 0.6 });
+
+    // Collimated beam from the clip-on back through the sight to the eye
+    const beam = new THREE.Mesh(new THREE.CylinderGeometry(15 * mm, 15 * mm, 195 * mm, 32, 1, true),
+      new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.18, side: THREE.DoubleSide, depthWrite: false }));
+    beam.rotation.z = Math.PI / 2;
+    beam.position.set((CX - 61 - 97.5) * mm, AXIS_Y * mm, 0);
+    beam.userData.noFit = true;
+    rail.add(beam);
+    const eyeLab = label("◄ to eye (~75 mm)", "");
+    eyeLab.position.set((EX - 44 - 25) * mm, (AXIS_Y + 22) * mm, 0);
+    rail.add(eyeLab);
     hw.add(rail);
 
     // ---------------------------------------------------------- hub build (V2H), from pcb.js
@@ -363,8 +397,8 @@
       groups[which].traverse((o) => { if (o.isMesh && !o.userData.noFit && !(o.parent && o.parent.userData.noFit)) box.expandByObject(o); });
       const c = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3());
       const r = Math.max(size.x, size.y * 1.4, size.z) * 0.5;
-      const dist = (r / Math.tan((hwCam.fov * Math.PI) / 360)) * (which === "rail" ? 0.95 : 1.15);
-      const dir = (which === "rail" ? new THREE.Vector3(0.3, 0.45, 1) : new THREE.Vector3(1, 0.85, 1.15)).normalize();
+      const dist = (r / Math.tan((hwCam.fov * Math.PI) / 360)) * (which === "rail" ? 0.72 : 1.15);
+      const dir = (which === "rail" ? new THREE.Vector3(0.25, 0.6, 1) : new THREE.Vector3(1, 0.85, 1.15)).normalize();
       hwCam.position.copy(c).addScaledVector(dir, dist);
       hwCtl.target.copy(c);
       hwCtl.update();
