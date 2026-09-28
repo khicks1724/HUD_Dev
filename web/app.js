@@ -391,6 +391,29 @@ ${!pr.inFront ? "behind the viewer → edge cue" : pr.onScreen ? "on screen" : "
     setStatus("liveStatus", "not connected");
   }
 
+  // ================================================================ PCB layout
+  function initPcb() {
+    const P = window.PCB, host = $("pcbView");
+    if (!P || !host) return;
+    const select = (ref) => {
+      P.select(host, ref);
+      $("pcbInfo").innerHTML = P.info(ref);
+      document.querySelectorAll("#pcbRows tr").forEach((tr) => tr.classList.toggle("sel", tr.dataset.ref === ref));
+      App.pcbSelected = ref; // scene3d highlights the same part
+    };
+    P.renderSvg(host, { onSelect: select });
+    $("pcbRows").innerHTML = P.parts
+      .map((p) => `<tr data-ref="${p.ref}"><td><span class="swatch" style="background:${P.groups[p.grp].color}"></span> ${p.ref}</td><td>${p.name}</td><td>${p.part}</td></tr>`)
+      .join("");
+    $("pcbRows").addEventListener("click", (e) => { const tr = e.target.closest("tr"); if (tr) select(tr.dataset.ref); });
+    $("pcbLegend").innerHTML =
+      Object.values(P.groups).map((g) => `<div class="legend-row"><span class="swatch" style="background:${g.color}"></span>${g.label}</div>`).join("") +
+      Object.values(P.nets).map((n) => `<div class="legend-row"><span class="swline" style="background:${n.color}"></span>${n.label}</div>`).join("") +
+      `<div class="legend-row"><span class="swatch" style="background:rgba(248,113,113,.3);border:1px dashed #f87171"></span>Keep-out zone</div>`;
+    document.querySelectorAll("[data-layer]").forEach((c) => c.addEventListener("change", () => P.setLayer(host, c.dataset.layer, c.checked)));
+    App.pcbSelect = select;
+  }
+
   // ================================================================ UI
   function bindRange(id, obj, key, fmtFn) {
     const el = $(id), out = $(id + "Val");
@@ -463,6 +486,7 @@ ${!pr.inFront ? "behind the viewer → edge cue" : pr.onScreen ? "on screen" : "
     try { const ip = localStorage.getItem("hud.ip"); if (ip) $("liveIp").value = ip; } catch (e) { /* ignore */ }
     $("liveIp").addEventListener("change", (e) => { try { localStorage.setItem("hud.ip", e.target.value); } catch (x) { /* ignore */ } });
 
+    initPcb();
     setStatus("srcStatus", "built-in scenario (same as the firmware's fake mode)");
     setStatus("liveStatus", "not connected");
     const loop = () => { step(); requestAnimationFrame(loop); };

@@ -105,6 +105,39 @@ pre.log { height: 180px; overflow: auto; background: var(--bg-base); border: 1px
 .pill { display: inline-block; font: 11px var(--app-font-family); padding: 1px 7px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); letter-spacing: .04em; }
 .pill.done { color: var(--success); border-color: rgba(52,211,153,.5); } .pill.next { color: var(--warning); border-color: rgba(247,185,85,.5); } .pill.todo { color: var(--muted); }
 
+
+/* PCB layout */
+.gpcb { grid-template-columns: minmax(0, 1fr) 460px; }
+@media (max-width: 1300px) { .gpcb { grid-template-columns: 1fr; } }
+.pcbwrap { background: #d9dcdf; border: 1px solid var(--border); padding: 12px; }
+.pcbsvg { display: block; width: 100%; max-width: 980px; height: auto; margin: 0 auto; }
+.pcbsvg .board { fill: #0e4a2b; stroke: #062414; stroke-width: 3; }
+.pcbsvg .pad { fill: #d4a93c; }
+.pcbsvg .drill { fill: #1a1a1a; }
+.pcbsvg .hole { fill: #d4a93c; }
+.pcbsvg .part .body { stroke: rgba(255,255,255,.55); stroke-width: 1.5; }
+.pcbsvg .part { cursor: pointer; }
+.pcbsvg .part:hover .body { stroke: #fff; stroke-width: 3; }
+.pcbsvg .part.sel .body { stroke: #ffd400; stroke-width: 5; }
+.pcbsvg .ref { fill: #fff; font-family: var(--app-font-family); font-weight: 700; text-anchor: middle; pointer-events: none; }
+.pcbsvg .ko { fill: rgba(248,113,113,.12); stroke: #f87171; stroke-width: 2; stroke-dasharray: 10 6; }
+.pcbsvg .kotxt { fill: #ffb4b4; font: 700 11px var(--app-font-family); text-anchor: middle; letter-spacing: 1px; }
+.pcbsvg .head { fill: rgba(255,255,255,.03); stroke: #f1f1f1; stroke-width: 2; stroke-dasharray: 14 8; }
+.pcbsvg .headtxt { fill: #e4e4e4; font: 700 13px var(--app-font-family); letter-spacing: 1.5px; }
+.pcbsvg .net { opacity: .95; }
+.pcbsvg .dims line { stroke: #444; stroke-width: 1.5; }
+.pcbsvg .dims text, .pcbsvg .edge { fill: #333; font: 700 14px var(--app-font-family); text-anchor: middle; }
+.pcbinfo { margin-top: 8px; min-height: 58px; font-size: 12px; border-top: 1px solid var(--border-soft); padding-top: 8px; }
+.pcbinfo b { color: var(--text); }
+.chk { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-secondary); margin-right: 10px; }
+.legend-row { display: flex; align-items: center; gap: 8px; font-size: 12px; margin: 3px 0; color: var(--text-secondary); }
+.swatch { width: 14px; height: 10px; display: inline-block; border: 1px solid rgba(255,255,255,.3); }
+.swline { width: 18px; height: 3px; display: inline-block; }
+#pcbRows tr { cursor: pointer; } #pcbRows tr:hover td { background: var(--bg-hover); } #pcbRows tr.sel td { background: rgba(255,255,255,.12); color: var(--text); }
+/* 3D hardware viewer on a light stage */
+#hwView { background: #e3e5e8; height: 520px; border-color: #bfc3c8; }
+.hwlabels .lbl { background: rgba(255,255,255,.92); color: #111; border: 1px solid #9aa0a6; font: 600 11px var(--app-font-family); }
+
 /* Diagrams: fixed max sizes so they never scale up past legible text */
 svg.diag { display: block; width: 100%; height: auto; margin: 4px 0 8px; }
 svg text { font-family: var(--app-font-family); }
@@ -141,7 +174,8 @@ ul, ol { margin: 4px 0 8px 18px; padding: 0; color: var(--text-secondary); } li 
   <button data-tab="overview">Overview</button>
   <button data-tab="sim">HUD Simulator</button>
   <button data-tab="live">Live HUD</button>
-  <button data-tab="hardware">Hardware &amp; PCB</button>
+  <button data-tab="hardware">Hardware &amp; 3D</button>
+  <button data-tab="pcb">PCB Layout</button>
   <button data-tab="thermal">Thermal &amp; Rail</button>
   <button data-tab="firmware">Firmware</button>
   <button data-tab="roadmap">Roadmap</button>
@@ -289,12 +323,13 @@ ul, ol { margin: 4px 0 8px 18px; padding: 0; color: var(--text-secondary); } li 
 
 <!-- ================================================================ HARDWARE -->
 <section class="tab" id="hardware">
-  <h2>Hardware &amp; PCB</h2>
+  <h2>Hardware &amp; 3D</h2>
   <div class="grid g2">
     <div class="card">
       <div class="btns"><button class="btn on" data-build="hub">Hub backpack (V2H, recommended)</button><button class="btn" data-build="desk">Desk build (V1 + V2)</button><button class="btn" data-build="rail">Rail build (V3 + Boson)</button></div>
       <div class="view3d" id="hwView"></div>
       <div class="controls" style="margin-top:8px"><label for="explode">Explode</label><input id="explode" type="range" min="0" max="1" step="0.01" value="0"><span></span></div>
+      <div class="btns"><label class="chk"><input type="checkbox" id="hwLabels" checked> Labels</label><button class="btn" id="hwFit">Fit view</button><span class="muted" style="font-size:11px">Drag to orbit · scroll to zoom · right-drag to pan · click a part</span></div>
       <div id="hwInfo" class="muted" style="min-height:48px">Click a part.</div>
     </div>
     <div class="card">
@@ -393,6 +428,42 @@ ul, ol { margin: 4px 0 8px 18px; padding: 0; color: var(--text-secondary); } li 
   </div>
 </section>
 
+
+<!-- ================================================================ PCB -->
+<section class="tab" id="pcb">
+  <h2>PCB layout: V2H hub backpack</h2>
+  <p>A placement study, not a routed board: 84 × 54 mm, 4 layers. The HUD head sits on the headers above the left half, the 18650 pack sits underneath, and the three USB-C ports line the bottom edge. Click a part to see what it is and why it sits there. The 3D model on <b>Hardware &amp; 3D</b> is generated from the same data.</p>
+  <div class="grid gpcb">
+    <div class="card">
+      <h3>Top side</h3>
+      <div class="btns">
+        <span class="lab">Layers</span>
+        <label class="chk"><input type="checkbox" data-layer="parts" checked> Parts</label>
+        <label class="chk"><input type="checkbox" data-layer="cu" checked> Copper routes</label>
+        <label class="chk"><input type="checkbox" data-layer="ko" checked> Keep-outs</label>
+        <label class="chk"><input type="checkbox" data-layer="head" checked> HUD head outline</label>
+      </div>
+      <div id="pcbView" class="pcbwrap"></div>
+      <div id="pcbInfo" class="pcbinfo muted">Click a part.</div>
+    </div>
+    <div class="card">
+      <h3>Legend</h3>
+      <div id="pcbLegend"></div>
+      <h3>Components</h3>
+      <table><thead><tr><th>Ref</th><th>Function</th><th>Part</th></tr></thead><tbody id="pcbRows"></tbody></table>
+      <h3>Layout rules</h3>
+      <ul>
+        <li>USB2 HS pair J1 → U1: 90 Ω differential, length-matched, reference plane unbroken, no stubs.</li>
+        <li>L1/U4 boost loop tight on the top layer; keep switch nodes away from the magnetometer and GNSS.</li>
+        <li>No copper pour or steel hardware inside the magnetometer keep-out.</li>
+        <li>Solid ground under the SAM-M10Q per the u-blox integration manual.</li>
+        <li>ESD clamps within 3 mm of each connector.</li>
+        <li>Stack: signal / GND / power / signal. Stitch ground vias along the board edge.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
 <!-- ================================================================ THERMAL -->
 <section class="tab" id="thermal">
   <h2>FLIR Boson thermal &amp; rail mount</h2>
@@ -425,7 +496,7 @@ ul, ol { margin: 4px 0 8px 18px; padding: 0; color: var(--text-secondary); } li 
     </div>
     <div class="card">
       <h3>Rail mount concept</h3>
-      <p>Design the housing with a <b>Picatinny (MIL-STD-1913) QD clamp</b>. For M-LOK handguards, add a short M-LOK-to-Picatinny section, so one clamp fits both. See the rail build in <b>Hardware &amp; PCB</b> (3D).</p>
+      <p>Design the housing with a <b>Picatinny (MIL-STD-1913) QD clamp</b>. For M-LOK handguards, add a short M-LOK-to-Picatinny section, so one clamp fits both. See the rail build in <b>Hardware &amp; 3D</b>.</p>
       <table>
         <tr><th>Picatinny</th><th></th></tr>
         <tr><td>Top width</td><td>21.2 mm</td></tr><tr><td>Slot width / pitch</td><td>5.23 mm / 10.01 mm</td></tr>
@@ -522,6 +593,7 @@ ul, ol { margin: 4px 0 8px 18px; padding: 0; color: var(--text-secondary); } li 
 </main>
 
 <script src="hud_math.js"></script>
+<script src="pcb.js"></script>
 <script src="app.js"></script>
 <script src="scene3d.js"></script>
 <script>
