@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TAK HUD Prototype</title>
+<style>
+:root {
+  --bg: #0a0e0c; --panel: #111814; --panel2: #16201a; --line: #243328; --text: #d6e2d8; --muted: #8a9c8f;
+  --accent: #00ff5a; --accent-dim: #0a7a38; --cyan: #50c8ff; --red: #ff4b4b; --lime: #8cff78; --yellow: #ffe63c; --amber: #ffaa00;
+  --mono: ui-monospace, "Cascadia Mono", "Consolas", "SFMono-Regular", monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+:root[data-theme="light"] {
+  --bg: #f4f6f4; --panel: #ffffff; --panel2: #eef2ee; --line: #d3dcd5; --text: #17211a; --muted: #5a6b5e;
+  --accent: #0a8a3e; --accent-dim: #9fd6b3;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); }
+header { display: flex; align-items: center; gap: 16px; padding: 14px 20px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+header h1 { font-size: 18px; margin: 0; letter-spacing: .5px; }
+header h1 span { color: var(--accent); font-family: var(--mono); }
+header .sub { color: var(--muted); font-size: 13px; }
+nav { display: flex; gap: 4px; padding: 8px 16px; border-bottom: 1px solid var(--line); overflow-x: auto; position: sticky; top: 0; background: var(--bg); z-index: 5; }
+nav button { background: none; border: 1px solid transparent; color: var(--muted); padding: 7px 12px; border-radius: 6px; cursor: pointer; font: 14px var(--sans); white-space: nowrap; }
+nav button:hover { color: var(--text); }
+nav button.active { color: var(--accent); border-color: var(--line); background: var(--panel); }
+main { max-width: 1400px; margin: 0 auto; padding: 18px 20px 60px; }
+section.tab { display: none; }
+section.tab.active { display: block; }
+h2 { font-size: 20px; margin: 4px 0 6px; }
+h3 { font-size: 15px; margin: 18px 0 8px; color: var(--accent); font-weight: 600; letter-spacing: .3px; }
+p { margin: 6px 0 10px; max-width: 80ch; }
+.muted { color: var(--muted); }
+.grid { display: grid; gap: 16px; }
+.g2 { grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); }
+.g3 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+.card h3:first-child { margin-top: 0; }
+.view3d { position: relative; width: 100%; height: 440px; border-radius: 8px; overflow: hidden; background: #0b1016; }
+.view3d canvas { display: block; width: 100%; height: 100%; }
+.view3d .labels { position: absolute; inset: 0; }
+.lbl { font: 11px var(--mono); padding: 1px 5px; border-radius: 3px; background: rgba(0,0,0,.55); color: #fff; pointer-events: none; }
+.lbl.a1 { color: var(--cyan); } .lbl.a2 { color: var(--red); } .lbl.a3 { color: var(--lime); } .lbl.a0 { color: var(--yellow); }
+.lbl.own { color: #fff; border: 1px solid #fff; } .lbl.north { color: var(--accent); font-size: 16px; font-weight: 700; } .lbl.ring { color: #6f9f7f; background: none; }
+.eye { position: relative; width: 100%; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: #0b1016; }
+.eye canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+#eyeHud { mix-blend-mode: screen; image-rendering: pixelated; z-index: 2; pointer-events: none; }
+.hudwrap { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
+canvas.hud { image-rendering: pixelated; background: #000; border-radius: 6px; border: 1px solid var(--line); width: 480px; max-width: 100%; aspect-ratio: 1; }
+canvas.small { width: 240px; }
+.controls { display: grid; grid-template-columns: 110px 1fr 58px; gap: 6px 10px; align-items: center; font-size: 13px; }
+.controls input[type=range] { width: 100%; accent-color: var(--accent); }
+.controls output { font-family: var(--mono); color: var(--accent); text-align: right; }
+.btns { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
+.btn { background: var(--panel2); border: 1px solid var(--line); color: var(--text); padding: 6px 11px; border-radius: 6px; cursor: pointer; font: 13px var(--sans); }
+.btn:hover { border-color: var(--accent-dim); }
+.btn.on { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent-dim); border-color: var(--accent); color: #eafff0; }
+input[type=text], input:not([type]) { background: var(--panel2); border: 1px solid var(--line); color: var(--text); padding: 6px 9px; border-radius: 6px; font: 13px var(--mono); min-width: 0; }
+.status { font: 12px var(--mono); color: var(--muted); margin: 6px 0; }
+.status.ok { color: var(--accent); } .status.bad { color: var(--red); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+td code, p code, li code { font: 12px var(--mono); background: var(--panel2); padding: 1px 4px; border-radius: 3px; }
+#targetRows tr { cursor: pointer; } #targetRows tr.sel td { background: var(--panel2); color: var(--accent); }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
+.dot.a1 { background: var(--cyan); } .dot.a2 { background: var(--red); } .dot.a3 { background: var(--lime); } .dot.a0 { background: var(--yellow); }
+.step { margin: 8px 0; } .step code { display: block; white-space: pre-wrap; font: 12px/1.5 var(--mono); background: var(--panel2); padding: 7px 9px; border-radius: 6px; margin-top: 4px; color: var(--text); }
+pre.log { height: 180px; overflow: auto; background: #050806; color: #9fe0b2; font: 12px var(--mono); padding: 8px; border-radius: 6px; margin: 8px 0; white-space: pre-wrap; }
+.kv { font: 13px var(--mono); margin: 3px 0; }
+.pill { display: inline-block; font: 11px var(--mono); padding: 1px 7px; border-radius: 10px; border: 1px solid var(--line); color: var(--muted); }
+.pill.done { color: var(--accent); border-color: var(--accent-dim); } .pill.next { color: var(--amber); border-color: #6b4a00; } .pill.todo { color: var(--muted); }
+svg text { font-family: var(--sans); }
+.flow .node rect { fill: var(--panel2); stroke: var(--line); rx: 8; }
+.flow .node.hl rect { stroke: var(--accent); }
+.flow .node text { fill: var(--text); font-size: 13px; }
+.flow .node text.s { fill: var(--muted); font-size: 11px; }
+.flow .edge { stroke: var(--accent-dim); stroke-width: 2; fill: none; }
+.flow .pkt { fill: var(--accent); }
+.flow .pkt.c { fill: var(--cyan); } .flow .pkt.a { fill: var(--amber); }
+.flow .node { cursor: pointer; }
+#flowInfo { min-height: 72px; }
+.notice { border-left: 3px solid var(--amber); padding: 6px 12px; background: var(--panel2); border-radius: 0 6px 6px 0; font-size: 14px; margin: 10px 0; }
+.nothree .view3d::after { content: "3D needs internet access for three.js (cdn.jsdelivr.net). The 2D HUD, math and live view still work."; position: absolute; inset: 0; display: grid; place-items: center; padding: 30px; text-align: center; color: var(--muted); font-size: 13px; }
+ul { margin: 6px 0 10px 18px; padding: 0; } li { margin: 3px 0; }
+a { color: var(--cyan); }
+.theme { margin-left: auto; }
+@media (max-width: 700px) { .g2 { grid-template-columns: 1fr; } .controls { grid-template-columns: 90px 1fr 50px; } main { padding: 12px 16px 40px; } }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<header>
+  <h1><span>▲</span> TAK HUD Prototype</h1>
+  <div class="sub">Waveshare ESP32-S3-LCD-1.3-C prism · TAK/CoT · IMU · FLIR Boson · everything in <code>HUD_Dev/</code></div>
+  <button class="btn theme" id="themeBtn" title="Toggle light/dark">◐</button>
+</header>
+<nav>
+  <button data-tab="overview">Overview</button>
+  <button data-tab="sim">HUD Simulator</button>
+  <button data-tab="live">Live HUD</button>
+  <button data-tab="hardware">Hardware &amp; PCB</button>
+  <button data-tab="thermal">Thermal &amp; Rail</button>
+  <button data-tab="firmware">Firmware</button>
+  <button data-tab="roadmap">Roadmap</button>
+</nav>
+<main>
+
+<!-- ================================================================ OVERVIEW -->
+<section class="tab" id="overview">
+  <h2>How the pieces fit</h2>
+  <p>The HUD is a small TAK client. It learns <b>where the other units are</b> (CoT from a TAK Server, the ATAK
+  multicast mesh, or a USB-attached phone), <b>where it is</b> (your ATAK phone, later its own GNSS) and
+  <b>which way it is looking</b> (the QMI8658 IMU, later a magnetometer). It then projects every unit into its
+  own field of view and draws it on the prism. Click a box to see what it does and where the code lives.</p>
+  <div class="grid g2">
+    <div class="card">
+      <svg class="flow" viewBox="0 0 700 470" width="100%" id="flowSvg" role="img" aria-label="Data flow from ATAK and TAK Server to the HUD">
+        <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0a7a38"/></marker></defs>
+        <path class="edge" id="e1" d="M120 70 L120 150" marker-end="url(#arr)"/>
+        <path class="edge" id="e2" d="M200 50 L300 50" marker-end="url(#arr)"/>
+        <path class="edge" id="e3" d="M380 75 L380 150" marker-end="url(#arr)"/>
+        <path class="edge" id="e4" d="M120 205 L300 205" marker-end="url(#arr)"/>
+        <path class="edge" id="e5" d="M60 75 C 20 200, 20 300, 260 330" marker-end="url(#arr)"/>
+        <path class="edge" id="e6" d="M380 235 L380 290" marker-end="url(#arr)"/>
+        <path class="edge" id="e7" d="M600 205 L470 205" marker-end="url(#arr)"/>
+        <path class="edge" id="e8" d="M600 330 L470 330" marker-end="url(#arr)"/>
+        <path class="edge" id="e9" d="M380 370 L380 405" marker-end="url(#arr)"/>
+        <path class="edge" id="e10" d="M470 350 C 560 380, 580 420, 600 425" marker-end="url(#arr)"/>
+        <circle class="pkt" r="4"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#e2"/></animateMotion></circle>
+        <circle class="pkt" r="4"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#e3"/></animateMotion></circle>
+        <circle class="pkt c" r="4"><animateMotion dur="2.5s" repeatCount="indefinite"><mpath href="#e4"/></animateMotion></circle>
+        <circle class="pkt c" r="4"><animateMotion dur="3.2s" repeatCount="indefinite"><mpath href="#e5"/></animateMotion></circle>
+        <circle class="pkt a" r="4"><animateMotion dur="0.9s" repeatCount="indefinite"><mpath href="#e7"/></animateMotion></circle>
+        <circle class="pkt a" r="4"><animateMotion dur="1.4s" repeatCount="indefinite"><mpath href="#e8"/></animateMotion></circle>
+        <circle class="pkt" r="4"><animateMotion dur="1.2s" repeatCount="indefinite"><mpath href="#e6"/></animateMotion></circle>
+        <circle class="pkt" r="4"><animateMotion dur="1.0s" repeatCount="indefinite"><mpath href="#e9"/></animateMotion></circle>
+        <circle class="pkt c" r="4"><animateMotion dur="2.0s" repeatCount="indefinite"><mpath href="#e10"/></animateMotion></circle>
+        <g class="node" data-k="atak"><rect x="40" y="25" width="160" height="50"/><text x="120" y="47" text-anchor="middle">ATAK phone</text><text class="s" x="120" y="64" text-anchor="middle">own GPS · all tracks</text></g>
+        <g class="node" data-k="tak"><rect x="300" y="25" width="160" height="50"/><text x="380" y="47" text-anchor="middle">TAK Server</text><text class="s" x="380" y="64" text-anchor="middle">CoT · TLS 8089</text></g>
+        <g class="node" data-k="mesh"><rect x="40" y="150" width="160" height="55"/><text x="120" y="173" text-anchor="middle">Wi-Fi 2.4 GHz</text><text class="s" x="120" y="190" text-anchor="middle">mesh SA 239.2.3.1:6969</text></g>
+        <g class="node" data-k="net"><rect x="300" y="150" width="170" height="85"/><text x="385" y="172" text-anchor="middle">ESP32-S3 · core 0</text><text class="s" x="385" y="190" text-anchor="middle">tak_client · mesh_rx</text><text class="s" x="385" y="205" text-anchor="middle">CoT/protobuf parse</text><text class="s" x="385" y="220" text-anchor="middle">target table (256)</text></g>
+        <g class="node" data-k="imu"><rect x="600" y="180" width="95" height="50"/><text x="647" y="202" text-anchor="middle">QMI8658</text><text class="s" x="647" y="219" text-anchor="middle">+ mag (V2)</text></g>
+        <g class="node" data-k="gnss"><rect x="600" y="305" width="95" height="50"/><text x="647" y="327" text-anchor="middle">GNSS (V2)</text><text class="s" x="647" y="344" text-anchor="middle">own position</text></g>
+        <g class="node" data-k="render"><rect x="260" y="290" width="210" height="80"/><text x="365" y="312" text-anchor="middle">ESP32-S3 · core 1</text><text class="s" x="365" y="330" text-anchor="middle">AHRS 200 Hz → ENU → project</text><text class="s" x="365" y="345" text-anchor="middle">render 30 Hz</text><text class="s" x="365" y="360" text-anchor="middle">(same math as this page)</text></g>
+        <g class="node" data-k="lcd"><rect x="300" y="405" width="160" height="50"/><text x="380" y="427" text-anchor="middle">ST7789 → prism</text><text class="s" x="380" y="444" text-anchor="middle">mirrored, black = clear</text></g>
+        <g class="node" data-k="web"><rect x="600" y="400" width="95" height="55"/><text x="647" y="422" text-anchor="middle">This page</text><text class="s" x="647" y="439" text-anchor="middle">USB / Wi-Fi live</text></g>
+      </svg>
+      <div id="flowInfo" class="muted">Click a box.</div>
+    </div>
+    <div class="card">
+      <h3>What exists now</h3>
+      <ul>
+        <li><b>Portable C core</b> (<code>firmware/components/hud_core</code>): geodesy, quaternion AHRS, projection, CoT XML + TAK protobuf parsers, target table, NMEA, renderer. 339 host tests pass.</li>
+        <li><b>ESP-IDF firmware</b> (<code>firmware/</code>): display, IMU, Wi-Fi, TAK TCP/TLS client, mesh SA, USB-phone input, console, live-view API, thermal overlay hooks.</li>
+        <li><b>Tools</b>: <code>sim_server.py</code> (fake TAK server + scenario + this page), <code>provision.py</code> (TAK .p12 → device settings image).</li>
+        <li><b>Hardware study</b>: backpack PCB (GNSS/mag), thermal variant, integrated V3 board, Picatinny/M-LOK mount.</li>
+        <li><b>This page</b>: the HUD simulator uses a JavaScript port of the firmware renderer, pixel-checked against the C output (99.99 %).</li>
+      </ul>
+      <div class="notice">The firmware has not been compiled or flashed yet: ESP-IDF isn't installed on this PC. The portable core is compiled and tested with gcc.</div>
+      <h3>Run it</h3>
+      <ul>
+        <li>Open this file directly, or run <code>python tools/sim_server.py</code> and browse <code>http://localhost:8000</code> (also gives the HUD a fake TAK server).</li>
+        <li>Host tests: <code>firmware/test_host/run_tests.sh</code> · JS tests: <code>node tests/test_hud_math.js</code></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ SIMULATOR -->
+<section class="tab" id="sim">
+  <h2>HUD simulator</h2>
+  <p>Left: the world with your field of view (green) and, when you add errors, where the HUD <i>thinks</i> it is looking (amber).
+  Middle: <b>eye view</b>, the 3D scene from your eye with the HUD symbology blended on top the way the prism does it.
+  If heading and position are perfect the icons sit on the units; add heading or GPS error and watch them slide.</p>
+  <div class="grid g3">
+    <div class="card"><h3>World</h3><div class="view3d" id="worldView"></div><div class="status" id="attReadout"></div></div>
+    <div class="card"><h3>Eye view (through the prism)</h3><div class="eye" id="eyeView"><canvas id="eyeHud" width="480" height="480"></canvas></div></div>
+    <div class="card">
+      <h3>Pose</h3>
+      <div class="controls">
+        <label for="hdg">Heading</label><input id="hdg" type="range" min="0" max="359" value="8"><output id="hdgVal"></output>
+        <label for="pitch">Pitch</label><input id="pitch" type="range" min="-30" max="30" value="2"><output id="pitchVal"></output>
+        <label for="roll">Roll</label><input id="roll" type="range" min="-30" max="30" value="0"><output id="rollVal"></output>
+        <label for="scan">Scan head</label><input id="scan" type="checkbox"><span></span>
+      </div>
+      <h3>Optics &amp; errors</h3>
+      <div class="controls">
+        <label for="hfov">HUD HFOV</label><input id="hfov" type="range" min="20" max="60" value="40"><output id="hfovVal"></output>
+        <label for="vfov">HUD VFOV</label><input id="vfov" type="range" min="20" max="60" value="40"><output id="vfovVal"></output>
+        <label for="hdgErr">Heading error</label><input id="hdgErr" type="range" min="-10" max="10" step="0.5" value="0"><output id="hdgErrVal"></output>
+        <label for="posErr">GPS error</label><input id="posErr" type="range" min="0" max="50" value="0"><output id="posErrVal"></output>
+      </div>
+      <h3>Display</h3>
+      <div class="btns"><button class="btn on" data-mode="0">Normal</button><button class="btn" data-mode="1">Minimal</button><button class="btn" data-mode="2">Calib</button><button class="btn" data-mode="3">Status</button></div>
+      <div class="btns"><span class="muted" style="align-self:center">Thermal</span><button class="btn on" data-thermal="0">Off</button><button class="btn" data-thermal="1">Full</button><button class="btn" data-thermal="2">Hot only</button></div>
+      <h3>Target source</h3>
+      <div class="btns"><button class="btn" id="srcBuiltin">Built-in</button><button class="btn" id="srcServer">sim_server.py</button><input id="serverUrl" placeholder="http://localhost:8000" size="22"></div>
+      <div class="status" id="srcStatus"></div>
+    </div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card">
+      <h3>The 240 × 240 display (what the firmware draws)</h3>
+      <div class="hudwrap">
+        <canvas id="hudCanvas" class="hud" width="480" height="480"></canvas>
+        <div><canvas id="lcdCanvas" class="hud small" width="240" height="240"></canvas>
+        <p class="muted" style="max-width:240px;font-size:12px">What the LCD itself shows: mirrored, so the prism reflection reads correctly. Black pixels emit no light, so they're see-through.</p></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Units (click one to follow it through the math)</h3>
+      <table><thead><tr><th>Callsign</th><th>Affil.</th><th>Bearing</th><th>Range</th><th>HUD</th></tr></thead><tbody id="targetRows"></tbody></table>
+      <h3>World → pixel, step by step</h3>
+      <div id="mathSteps"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ LIVE -->
+<section class="tab" id="live">
+  <h2>Live HUD</h2>
+  <p>See what the real HUD is showing. <b>USB-C</b> uses the browser's Web Serial API (Chrome or Edge): the firmware's
+  <code>stream on</code> command prints its state and this page redraws it with the same renderer. <b>Wi-Fi</b> polls
+  <code>http://&lt;hud-ip&gt;/api/state</code> and the raw framebuffer <code>/api/frame</code>, so you get the exact pixels.
+  <b>Demo</b> pipes the simulator through the same JSON path, so you can try it without the board.</p>
+  <div class="card">
+    <div class="btns">
+      <button class="btn primary" id="liveUsb">Connect USB-C</button>
+      <input id="liveIp" placeholder="HUD IP, e.g. 192.168.1.50" size="24"><button class="btn primary" id="liveWifi">Connect Wi-Fi</button>
+      <button class="btn" id="liveDemo">Demo (no hardware)</button><button class="btn" id="liveStop">Disconnect</button>
+    </div>
+    <div class="status" id="liveStatus"></div>
+  </div>
+  <div class="grid g3" style="margin-top:16px">
+    <div class="card"><h3>Rendered from HUD state</h3><canvas id="liveCanvas" class="hud" width="480" height="480"></canvas>
+      <div class="kv" id="liveAtt">—</div><div class="kv" id="liveOwn">—</div><div class="kv" id="liveTracks">—</div></div>
+    <div class="card"><h3>Raw framebuffer (Wi-Fi) / demo</h3><canvas id="liveFrame" class="hud" width="240" height="240"></canvas>
+      <p class="muted" style="font-size:12px">Unmirrored, straight from <code>/api/frame</code> (240×240 RGB565). Over USB, 115200 baud is too slow for raw frames, so only the state view updates.</p></div>
+    <div class="card"><h3>Attitude</h3><div class="view3d" id="liveAttView" style="height:300px"></div>
+      <h3>Console</h3>
+      <div class="btns"><button class="btn" data-livecmd="mode 0">Normal</button><button class="btn" data-livecmd="mode 1">Minimal</button><button class="btn" data-livecmd="mode 2">Calib</button><button class="btn" data-livecmd="mode 3">Status</button><button class="btn" data-livecmd="thermal">Thermal</button><button class="btn" data-livecmd="status">status</button></div>
+      <form id="liveSend" class="btns"><input id="liveCmd" placeholder="e.g. tak 192.168.1.10 8087 tcp" style="flex:1"><button class="btn">Send</button></form>
+      <pre class="log" id="liveLog"></pre></div>
+  </div>
+</section>
+
+<!-- ================================================================ HARDWARE -->
+<section class="tab" id="hardware">
+  <h2>Hardware &amp; PCB</h2>
+  <div class="grid g2">
+    <div class="card">
+      <div class="btns"><button class="btn on" data-build="desk">Desk build (V1 + V2 backpack)</button><button class="btn" data-build="rail">Rail build (V3 + Boson)</button></div>
+      <div class="view3d" id="hwView"></div>
+      <div class="controls" style="margin-top:8px"><label for="explode">Explode</label><input id="explode" type="range" min="0" max="1" step="0.01" value="0"><span></span></div>
+      <div id="hwInfo" class="muted" style="min-height:48px">Click a part.</div>
+    </div>
+    <div class="card">
+      <h3>The constraint: 13 free GPIOs</h3>
+      <table>
+        <tr><th>Function</th><th>GPIO (Waveshare schematic)</th></tr>
+        <tr><td>ST7789 LCD</td><td>MOSI 41 · SCLK 40 · CS 39 · DC 38 · RST 42 · BL 20</td></tr>
+        <tr><td>QMI8658 IMU</td><td>SDA 47 · SCL 48 · INT1 46 · INT2 45</td></tr>
+        <tr><td>micro-SD</td><td>MISO 16 · CS 17 · MOSI 18 · CLK 21</td></tr>
+        <tr><td>USB-C (CH343P UART)</td><td>TX 43 · RX 44</td></tr>
+        <tr><td>Other</td><td>BOOT 0 · WS2812 15 · VBAT ADC 6 (×2) · 19 = reset circuit</td></tr>
+        <tr><td><b>Free on headers</b></td><td><b>1-5, 7-14</b></td></tr>
+      </table>
+      <h3>Backpack pin maps</h3>
+      <table>
+        <tr><th>GPIO</th><th>V2 (GNSS + mag)</th><th>V2T (thermal)</th></tr>
+        <tr><td>1-5, 7-9</td><td>spare · haptic 5 · encoder 7/8 · mag DRDY 9</td><td>Boson D0-D7 (via 1.8→3.3 V)</td></tr>
+        <tr><td>10 / 11</td><td>I2C SDA / SCL</td><td>PCLK / VSYNC</td></tr>
+        <tr><td>12 / 13</td><td>GNSS RX / TX</td><td>HSYNC / I2C SDA</td></tr>
+        <tr><td>14</td><td>GNSS PPS</td><td>I2C SCL (GNSS over I2C)</td></tr>
+      </table>
+      <h3>Power (1S LiPo)</h3>
+      <table>
+        <tr><th>Build</th><th>Average</th><th>Runtime</th></tr>
+        <tr><td>HUD (V1/V2)</td><td>~150 mA</td><td>~7 h on 1200 mAh</td></tr>
+        <tr><td>+ Boson 640</td><td>~400 mA</td><td>~4-5 h on 2000 mAh</td></tr>
+      </table>
+      <p class="muted">Details: <code>hardware/README.md</code>, <code>hardware/backpack/</code> (plan + <code>bom.csv</code>), <code>hardware/core_board/</code>.</p>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h3>Key parts</h3>
+    <table>
+      <tr><th>Function</th><th>Part</th><th>Why</th></tr>
+      <tr><td>GNSS</td><td>u-blox SAM-M10Q</td><td>Antenna built in: no RF layout. UART + I2C, ~8 mA.</td></tr>
+      <tr><td>Heading</td><td>MEMSIC MMC5983MA</td><td>Low-noise 18-bit magnetometer with SET/RESET. Driver in firmware.</td></tr>
+      <tr><td>Fuel gauge</td><td>MAX17048</td><td>No sense resistor.</td></tr>
+      <tr><td>Thermal level shift</td><td>SN74AXC8T245 + AXC4T245</td><td>Boson CMOS is 1.8 V, the ESP32-S3 needs ~2.5 V for a high.</td></tr>
+      <tr><td>Boson power</td><td>TPS63802 + TPS22918</td><td>3.3 V 2 A buck-boost from the LiPo, switchable.</td></tr>
+      <tr><td>V3 MCU</td><td>ESP32-P4 + ESP32-C6</td><td>USB-HS host (Boson VPC as a webcam), 2D pixel accelerator, MIPI.</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ================================================================ THERMAL -->
+<section class="tab" id="thermal">
+  <h2>FLIR Boson thermal &amp; rail mount</h2>
+  <div class="grid g2">
+    <div class="card">
+      <h3>Your camera: 21640AS50-6IAER</h3>
+      <p>Boson 640 × 512, <b>50° HFOV</b> (≈41° vertical), shutterless, 60 Hz. 3.3 V, 0.5-1.55 W. Video over 1.8 V CMOS or USB. Control UART 921600.</p>
+      <p><b>Buy the Boson USB VPC Kit (421-0061-00, ≈$193).</b> It turns the 80-pin connector into a USB-C webcam plus a control port. You need it to configure the camera, and it's the fastest bench path.</p>
+      <h3>Getting thermal onto the HUD</h3>
+      <table>
+        <tr><th>Path</th><th>Verdict</th></tr>
+        <tr><td>VPC USB → ESP32-S3</td><td style="color:var(--red)">No. The S3's USB is Full-Speed (12 Mbit/s), and the video needs ~80 Mbit/s.</td></tr>
+        <tr><td>Boson 8-bit CMOS → level shift → S3 camera port</td><td>Yes, 15-30 Hz, cropped to 240². Uses all 13 pins (V2T).</td></tr>
+        <tr><td>VPC USB → ESP32-P4 (USB-HS UVC)</td><td style="color:var(--accent)">Recommended for the rail unit. Full rate, hardware blend.</td></tr>
+        <tr><td>VPC → laptop / Pi</td><td>Easiest for experiments.</td></tr>
+      </table>
+      <h3>Matching the fields of view</h3>
+      <svg viewBox="0 0 420 200" width="100%" role="img" aria-label="Camera 50 degree frame with the HUD 40 degree crop inside it">
+        <rect x="20" y="20" width="320" height="160" fill="none" stroke="#50c8ff" stroke-width="2"/>
+        <text x="26" y="38" fill="#50c8ff" font-size="12">Boson 640×512 · 50° × 41°</text>
+        <rect x="55" y="36" width="250" height="130" fill="rgba(0,255,90,.12)" stroke="#00ff5a" stroke-width="2"/>
+        <text x="62" y="160" fill="#00ff5a" font-size="12">HUD 40° ↔ central 499 px, scaled to 240</text>
+        <line x1="180" y1="90" x2="180" y2="110" stroke="#00ff5a"/><line x1="170" y1="100" x2="190" y2="100" stroke="#00ff5a"/>
+        <text x="350" y="60" fill="var(--muted)" font-size="11">fx_cam =</text><text x="350" y="76" fill="var(--muted)" font-size="11">320/tan 25°</text>
+        <text x="350" y="92" fill="var(--muted)" font-size="11">= 686 px</text>
+      </svg>
+      <p class="muted">Try it in the simulator: Thermal → <b>Hot only</b>. Only warm things light up, everything else stays black (see-through), and the camera is rendered from the <i>true</i> pose. So when you add heading error, you'll see the icons drift off the heat signatures. That gap is exactly what thermal-assisted registration would close.</p>
+    </div>
+    <div class="card">
+      <h3>Rail mount concept</h3>
+      <p>Design the housing with a <b>Picatinny (MIL-STD-1913) QD clamp</b>. For M-LOK handguards, add a short M-LOK-to-Picatinny section, so one clamp fits both. See the rail build in <b>Hardware &amp; PCB</b> (3D).</p>
+      <table>
+        <tr><th>Picatinny</th><th></th></tr>
+        <tr><td>Top width</td><td>21.2 mm</td></tr><tr><td>Slot width / pitch</td><td>5.23 mm / 10.01 mm</td></tr>
+        <tr><th>M-LOK</th><th></th></tr>
+        <tr><td>Slot</td><td>32 × 7 mm, 40 mm pitch, T-nut + M5/#10-24</td></tr>
+      </table>
+      <h3>What changes on a rifle</h3>
+      <ul>
+        <li><b>Recoil</b> saturates the ±16 g IMU. The firmware already ignores accelerometer corrections away from 1 g. Use a ±2000 dps gyro and hold attitude briefly after a shock spike.</li>
+        <li><b>Rigidity</b>: Boson, IMU and optic go on one rigid chassis. The rest can be isolated.</li>
+        <li><b>Barrel steel</b> distorts the magnetometer: calibrate on the gun, mount it high and to the rear, and use boresight alignment as the fallback.</li>
+        <li><b>Optics</b>: the Waveshare prism isn't collimated. At rail eye relief use a micro-display + eyepiece or a collimated combiner.</li>
+        <li>This is a situational-awareness display (TAK plus thermal), not an aiming device.</li>
+      </ul>
+      <p class="muted">Files: <code>docs/THERMAL.md</code>, <code>hardware/mount/README.md</code>, <code>hardware/mount/hud_rail_mount.scad</code> (OpenSCAD, printable concept).</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ FIRMWARE -->
+<section class="tab" id="firmware">
+  <h2>Firmware</h2>
+  <div class="grid g2">
+    <div class="card">
+      <h3>Tasks</h3>
+      <svg viewBox="0 0 520 300" width="100%" role="img" aria-label="FreeRTOS tasks on core 0 and core 1">
+        <rect x="10" y="10" width="245" height="280" rx="10" fill="none" stroke="#243328"/><text x="22" y="32" fill="#8a9c8f" font-size="13">Core 0 · networking</text>
+        <rect x="265" y="10" width="245" height="280" rx="10" fill="none" stroke="#243328"/><text x="277" y="32" fill="#8a9c8f" font-size="13">Core 1 · real time</text>
+        <g font-size="12" fill="#d6e2d8">
+          <rect x="25" y="45" width="215" height="32" rx="6" fill="#16201a"/><text x="35" y="66">wifi + SNTP (events)</text>
+          <rect x="25" y="85" width="215" height="32" rx="6" fill="#16201a"/><text x="35" y="106">tak · TCP/TLS 8087/8089, ping 15 s</text>
+          <rect x="25" y="125" width="215" height="32" rx="6" fill="#16201a"/><text x="35" y="146">mesh · 239.2.3.1:6969, UDP 4349</text>
+          <rect x="25" y="165" width="215" height="32" rx="6" fill="#16201a"/><text x="35" y="186">fake / gnss / button</text>
+          <rect x="25" y="205" width="215" height="32" rx="6" fill="#16201a"/><text x="35" y="226">console (USB) · HTTP live view</text>
+          <rect x="25" y="245" width="215" height="32" rx="6" fill="#16201a"/><text x="35" y="266">thermal source (optional)</text>
+          <rect x="280" y="45" width="215" height="50" rx="6" fill="#16201a"/><text x="290" y="66">imu · 200 Hz</text><text x="290" y="84" fill="#8a9c8f">QMI8658 → mount → Mahony AHRS</text>
+          <rect x="280" y="105" width="215" height="70" rx="6" fill="#16201a"/><text x="290" y="126">render · 30 Hz</text><text x="290" y="144" fill="#8a9c8f">prune → ENU → project → draw</text><text x="290" y="162" fill="#8a9c8f">PSRAM framebuffer → SPI DMA</text>
+          <rect x="280" y="185" width="215" height="90" rx="6" fill="#0d1a12" stroke="#0a7a38"/><text x="290" y="206">app_state (mutex)</text><text x="290" y="224" fill="#8a9c8f">target table · own position</text><text x="290" y="242" fill="#8a9c8f">link · mode · thermal</text><text x="290" y="260" fill="#8a9c8f">attitude: spinlock copy</text>
+        </g>
+      </svg>
+      <h3>Own position priority</h3>
+      <p class="muted">GNSS (backpack) &gt; TAK owner / USB phone &gt; UDP &gt; manual &gt; fake. A stale source (15 s) gives way to the next one.</p>
+      <h3>Heading sources</h3>
+      <p class="muted">Gyro only (V1, drifts) · long-press BOOT to align on the unit in the crosshair · phone compass over UDP/USB (<code>hdg deg gain</code>) · magnetometer (V2).</p>
+    </div>
+    <div class="card">
+      <h3>First steps with the board</h3>
+      <ol>
+        <li>Install ESP-IDF v5.3+, then <code>cd firmware &amp;&amp; idf.py set-target esp32s3 &amp;&amp; idf.py build</code>.</li>
+        <li><code>idf.py -p COMx flash monitor</code> (the CH343 COM port). It boots into fake targets: rotate the board and the units should stay put in the world.</li>
+        <li>Console: <code>wifi &lt;ssid&gt; &lt;pass&gt;</code>, <code>tak &lt;pc-ip&gt; 8087 tcp</code>, <code>own uid ANDROID-SIM-OWNER</code>, <code>save</code>, <code>reboot</code>, with <code>python tools/sim_server.py</code> running.</li>
+        <li>Calibrate: <code>cal level</code>, then pitch the nose up and <code>cal nose</code>, then <code>mode 2</code> to measure FOV, then <code>fov</code> / <code>bore</code>, then <code>save</code>.</li>
+        <li>Real TAK Server: <code>python tools/provision.py … --proto tls --client-p12 HUD-001.p12 --truststore truststore-root.p12</code> and flash <code>hudcfg.bin</code>.</li>
+      </ol>
+      <h3>Console commands</h3>
+      <table>
+        <tr><td><code>status</code> · <code>imu</code></td><td>state, raw sensors</td></tr>
+        <tr><td><code>wifi</code> · <code>tak</code> · <code>own uid|cs</code></td><td>network and ownship</td></tr>
+        <tr><td><code>pos</code> · <code>hdg</code> · <code>fix</code> · <code>trk</code></td><td>manual / USB-phone position, heading, tracks</td></tr>
+        <tr><td><code>fov</code> · <code>bore</code> · <code>cal</code> · <code>mirror</code></td><td>optics and IMU calibration</td></tr>
+        <tr><td><code>mode</code> · <code>thermal</code> · <code>bright</code></td><td>display</td></tr>
+        <tr><td><code>stream on</code></td><td>live view over USB for this page</td></tr>
+        <tr><td><code>save</code> · <code>reboot</code></td><td>persist to the <code>hudcfg</code> partition</td></tr>
+      </table>
+      <h3>BOOT key</h3>
+      <p class="muted">Short press: next display mode. Double press: thermal Off/Full/Hot. Long press: align heading to the unit in the crosshair (in Calib mode, trim level).</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ ROADMAP -->
+<section class="tab" id="roadmap">
+  <h2>Roadmap</h2>
+  <div class="card">
+    <table>
+      <tr><th>#</th><th>Stage</th><th>What proves it works</th><th>Status</th></tr>
+      <tr><td>0</td><td>Math, parsers, renderer on PC</td><td>339 C tests, 289 JS tests, C↔JS pixel match</td><td><span class="pill done">done</span></td></tr>
+      <tr><td>1</td><td>Board bring-up: compile, flash, display + IMU</td><td>Horizon line stays level when you roll the board</td><td><span class="pill next">next · needs ESP-IDF</span></td></tr>
+      <tr><td>2</td><td>Fake targets</td><td>Rotate the board and the units stay fixed in the world</td><td><span class="pill done">code done</span></td></tr>
+      <tr><td>3</td><td>Prism optics calibration</td><td>Calib screen: FOV and boresight measured against a known object</td><td><span class="pill todo">todo</span></td></tr>
+      <tr><td>4</td><td>Own position from ATAK (TAK owner UID / mesh / USB)</td><td>STATUS shows POS TAK and your phone's coordinates</td><td><span class="pill done">code done</span></td></tr>
+      <tr><td>5</td><td>TAK Server over TLS 8089</td><td>A real server's tracks appear; the ping keeps the stream alive</td><td><span class="pill done">code done</span></td></tr>
+      <tr><td>6</td><td>Heading: boresight align, then magnetometer</td><td>Icons stay on a known unit after a 360° turn</td><td><span class="pill todo">todo (V2 PCB)</span></td></tr>
+      <tr><td>7</td><td>Standalone: GNSS + LiPo backpack</td><td>Works with the phone off</td><td><span class="pill todo">design done</span></td></tr>
+      <tr><td>8</td><td>Thermal: VPC on a bench, then S3 DVP or P4 UVC</td><td>Hot-only overlay lines up with TAK icons</td><td><span class="pill todo">overlay done · capture todo</span></td></tr>
+      <tr><td>9</td><td>ATAK plugin: USB power + tracks</td><td>One cable, phone supplies everything</td><td><span class="pill todo">HUD side done</span></td></tr>
+      <tr><td>10</td><td>V3 board + rail housing</td><td>Survives remounting with zero shift</td><td><span class="pill todo">concept</span></td></tr>
+    </table>
+    <h3>Accuracy you should expect</h3>
+    <p class="muted">2° of heading error puts an icon ~35 m off at 1 km, and GPS error of a few metres matters most for nearby units. That makes this a <b>geo-referenced cue display</b>, not precision AR. Magnetometer calibration, RTK or dual-antenna GNSS, and thermal-assisted snapping to heat signatures are the upgrade path. Try the error sliders in the simulator.</p>
+  </div>
+</section>
+
+</main>
+
+<script src="hud_math.js"></script>
+<script src="app.js"></script>
+<script src="scene3d.js"></script>
+<script>
+// Overview flow diagram info + theme toggle (classic script, works offline)
+(function () {
+  const info = {
+    atak: "<b>ATAK phone</b>: V1's source of own position. The HUD follows the phone's SA by UID/callsign (<code>own uid …</code>), over the TAK Server, the mesh, or a USB cable with a small ATAK plugin (<code>fix</code>/<code>trk</code> console lines). One C-to-C cable can also power the HUD.",
+    tak: "<b>TAK Server</b>: streaming CoT XML. Plain TCP 8087 or mutual-TLS 8089 with a per-device client cert (<code>tools/provision.py</code>). <code>tools/sim_server.py</code> stands in for it on your PC.",
+    mesh: "<b>Wi-Fi (2.4 GHz only)</b>: the ESP32-S3 has no 5 GHz. ATAK devices on the same network multicast SA to 239.2.3.1:6969 as XML or TAK Protocol v1 protobuf; both are decoded (<code>mesh_rx.c</code>, <code>hud_takproto.c</code>).",
+    net: "<b>Core 0</b>: <code>tak_client.c</code> (esp-tls, reconnect with backoff, ping), <code>mesh_rx.c</code>, CoT stream framing + parse (<code>hud_cot.c</code>), 256-entry target table with stale expiry from each event's own lifetime, so it works before NTP.",
+    imu: "<b>QMI8658</b> 6-axis at 200 Hz → two-pose mount calibration → Mahony AHRS (<code>hud_attitude.c</code>). Accel corrections are skipped under shock. The V2 backpack adds an MMC5983MA for absolute heading.",
+    gnss: "<b>GNSS (V2 backpack)</b>: SAM-M10Q NMEA → own position, and UTC to set the clock for TLS without NTP (<code>gnss_task.c</code>, <code>hud_nmea.c</code>).",
+    render: "<b>Core 1</b>: every 33 ms, snapshot state → ENU per target (<code>hud_geo.c</code>) → rotate into the HUD frame → pinhole projection (<code>hud_projection.c</code>) → draw (<code>hud_render.c</code>). This page runs a JavaScript port of the same code.",
+    lcd: "<b>ST7789 + prism</b>: RGB565 framebuffer in PSRAM, pushed over SPI DMA through two small internal bounce buffers. The panel is mirrored for the reflection; black pixels are transparent through the beam splitter.",
+    web: "<b>This page</b>: the Live HUD tab reads <code>@HUD</code> JSON over USB (Web Serial) or <code>/api/state</code> + <code>/api/frame</code> over Wi-Fi.",
+  };
+  document.querySelectorAll("#flowSvg .node").forEach((n) =>
+    n.addEventListener("click", () => {
+      document.querySelectorAll("#flowSvg .node").forEach((x) => x.classList.toggle("hl", x === n));
+      document.getElementById("flowInfo").innerHTML = info[n.dataset.k];
+    })
+  );
+  const root = document.documentElement;
+  try { const t = localStorage.getItem("hud.theme"); if (t) root.dataset.theme = t; } catch (e) {}
+  document.getElementById("themeBtn").addEventListener("click", () => {
+    root.dataset.theme = root.dataset.theme === "light" ? "dark" : "light";
+    try { localStorage.setItem("hud.theme", root.dataset.theme); } catch (e) {}
+  });
+})();
+</script>
+<script type="module">
+try {
+  const THREE = await import("three");
+  const { OrbitControls } = await import("three/addons/controls/OrbitControls.js");
+  const { CSS2DRenderer, CSS2DObject } = await import("three/addons/renderers/CSS2DRenderer.js");
+  const go = () => window.Scene3D.init(THREE, { OrbitControls, CSS2DRenderer, CSS2DObject });
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", go); else go();
+} catch (e) {
+  console.warn("three.js unavailable:", e);
+  document.body.classList.add("nothree");
+}
+</script>
+</body>
+</html>
