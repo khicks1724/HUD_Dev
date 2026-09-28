@@ -361,7 +361,7 @@ ul, ol { margin: 4px 0 8px 18px; padding: 0; color: var(--text-secondary); } li 
   <h2>Hardware &amp; 3D</h2>
   <div class="grid g2">
     <div class="card">
-      <div class="btns"><button class="btn on" data-build="hub">Hub backpack (V2H, recommended)</button><button class="btn" data-build="desk">Desk build (V1 + V2)</button><button class="btn" data-build="rail">Rail build (clip-on + EOTech)</button></div>
+      <div class="btns"><button class="btn on" data-build="hub">Hub backpack (V2H, recommended)</button><button class="btn" data-build="desk">Desk build (V1 + V2)</button><button class="btn" data-build="rail">Rail build (side pod + EOTech)</button></div>
       <div class="view3d" id="hwView"></div>
       <div class="controls" style="margin-top:8px"><label for="explode">Explode</label><input id="explode" type="range" min="0" max="1" step="0.01" value="0"><span></span></div>
       <div class="btns"><label class="chk"><input type="checkbox" id="hwLabels" checked> Labels</label><button class="btn" id="hwFit">Fit view</button><span class="muted" style="font-size:11px">Drag to orbit · scroll to zoom · right-drag to pan · click a part</span></div>
@@ -543,7 +543,8 @@ ul, ol { margin: 4px 0 8px 18px; padding: 0; color: var(--text-secondary); } li 
         <li><b>Recoil</b> saturates the ±16 g IMU. The firmware already ignores accelerometer corrections away from 1 g. Use a ±2000 dps gyro and hold attitude briefly after a shock spike.</li>
         <li><b>Rigidity</b>: Boson, IMU and optic go on one rigid chassis. The rest can be isolated.</li>
         <li><b>Barrel steel</b> distorts the magnetometer: calibrate on the gun, mount it high and to the rear, and use boresight alignment as the fallback.</li>
-        <li><b>With an EOTech XPS2 at the rear</b> (closest to the eye): the HUD/thermal unit is a <b>clip-on in front of it</b> on a flip-to-side mount. A micro-OLED sits behind a collimating lens (f ≈ 50 mm, ≥ 32 mm aperture), so thermal + TAK symbology appears at infinity <i>through</i> the EOTech window (≈36 mm above the rail). Your zero stays in the EOTech. See the rail build in <b>Hardware &amp; 3D</b>.</li>
+        <li><b>With an EOTech XPS2 at the rear:</b> put the camera, display and electronics in a <b>side pod</b>. Only a thin flip-up <b>beam-splitter combiner</b> sits in front of the EOTech, so the day view stays clear and hot-only thermal + TAK symbology is reflected on top. The display is collimated (micro-OLED at the focal point of a ~50 mm lens). See <b>Hardware &amp; 3D → Rail build</b>.</li>
+        <li><b>Side-mount parallax</b> at ~58 mm offset: 0.03° at 100 m, 0.13° at 25 m, 0.6° at 5 m, which is under one HUD pixel beyond ~20 m. The fixed shift and roll are aligned in software with <code>thal &lt;dx&gt; &lt;dy&gt; &lt;roll&gt;</code>.</li>
         <li><b>FOV at 1×</b>: a clip-on shows about 15-20°, so the 50° Boson image is cropped to the centre ~200 px for a 1:1 overlay. A narrower lens matches better.</li>
         <li>This is a situational-awareness display (TAK plus thermal), not an aiming device.</li>
       </ul>
@@ -659,7 +660,8 @@ try {
   const THREE = await import("three");
   const { OrbitControls } = await import("three/addons/controls/OrbitControls.js");
   const { CSS2DRenderer, CSS2DObject } = await import("three/addons/renderers/CSS2DRenderer.js");
-  const go = () => window.Scene3D.init(THREE, { OrbitControls, CSS2DRenderer, CSS2DObject });
+  const { RoundedBoxGeometry } = await import("three/addons/geometries/RoundedBoxGeometry.js");
+  const go = () => window.Scene3D.init(THREE, { OrbitControls, CSS2DRenderer, CSS2DObject, RoundedBoxGeometry });
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", go); else go();
 } catch (e) {
   console.warn("three.js unavailable:", e);

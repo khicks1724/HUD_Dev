@@ -294,15 +294,20 @@ static void draw_thermal(gfx_t *g, const hud_thermal_t *th, hud_thermal_mode_t m
 {
     if (!th || !th->px || th->src_w <= 0 || th->src_h <= 0) return;
     const bool hot_only = mode == HUD_THERMAL_HOT;
+    /* Inverse map each HUD pixel into the camera crop: undo the shift, then
+     * undo the roll about the screen centre, then scale into the crop. */
+    const float cxs = (g->w - 1) * 0.5f, cys = (g->h - 1) * 0.5f;
+    const float r = -th->roll_deg * DEG2RADF, cr = cosf(r), sr = sinf(r);
+    const float kx = (float)th->src_w / g->w, ky = (float)th->src_h / g->h;
     for (int y = 0; y < g->h; y++) {
-        const int sy = th->src_y + y * th->src_h / g->h;
-        if (sy < 0 || sy >= th->h) continue;
-        const uint8_t *row = th->px + (size_t)sy * th->w;
         uint16_t *out = g->px + (size_t)y * g->w;
+        const float v0 = y - cys - th->shift_y;
         for (int x = 0; x < g->w; x++) {
-            const int sx = th->src_x + x * th->src_w / g->w;
-            if (sx < 0 || sx >= th->w) continue;
-            int v = row[sx];
+            const float u0 = x - cxs - th->shift_x;
+            const float u = u0 * cr - v0 * sr + cxs, vv = u0 * sr + v0 * cr + cys;
+            const int sx = th->src_x + (int)(u * kx), sy = th->src_y + (int)(vv * ky);
+            if (u < 0 || vv < 0 || sx < 0 || sx >= th->w || sy < 0 || sy >= th->h) continue;
+            int v = th->px[(size_t)sy * th->w + sx];
             if (hot_only) {
                 if (v < th->hot_threshold) continue;
                 v = 120 + (v - th->hot_threshold) * 135 / (256 - th->hot_threshold);

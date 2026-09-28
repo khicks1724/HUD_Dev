@@ -84,8 +84,10 @@ fx_cam  = (640/2) / tan(50°/2)             = 686 px
 crop_w  = 2 * fx_cam * tan(HUD_hfov/2)     = 499 px   (for a 40° HUD)
 ```
 
-This assumes the camera is boresighted with the HUD, meaning mounted
-parallel in the same housing. Residual offset is a fixed pixel shift, which
+This assumes the camera is boresighted with the HUD. A side-mounted camera
+is aligned in software: `thal <dx_px> <dy_px> <roll_deg>` shifts and rotates
+the thermal image per pixel before it's drawn (`hud_render.c`), and
+parallax from a ~58 mm side offset stays under one HUD pixel beyond ~20 m. Residual offset is a fixed pixel shift, which
 you can calibrate the same way as the HUD boresight.
 
 **Thermal-assisted registration (future).** With both in one frame, a TAK

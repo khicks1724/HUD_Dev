@@ -99,17 +99,26 @@ static volatile bool s_ext_valid;
 void thermal_publish_external(const uint8_t *px, int w, int h, uint8_t hot_threshold)
 {
     /* The hub already cropped to the HUD FOV: show the whole frame. */
-    s_ext = (hud_thermal_t){px, w, h, 0, 0, w, h, hot_threshold};
+    s_ext = (hud_thermal_t){px, w, h, 0, 0, w, h, hot_threshold, 0, 0, 0};
     s_ext_valid = true;
     s_available = true;
 }
 
 const hud_thermal_t *thermal_latest(void)
 {
-    if (s_ext_valid) return &s_ext;
-    if (!s_available || !s_frame[s_front]) return NULL;
-    s_desc.px = s_frame[s_front];
-    return &s_desc;
+    hud_thermal_t *t = NULL;
+    if (s_ext_valid) {
+        t = &s_ext;
+    } else if (s_available && s_frame[s_front]) {
+        s_desc.px = s_frame[s_front];
+        t = &s_desc;
+    }
+    if (t) { /* side-mounted camera alignment from the console "thal" command */
+        t->shift_x = g_cfg.th_shift_x;
+        t->shift_y = g_cfg.th_shift_y;
+        t->roll_deg = g_cfg.th_roll_deg;
+    }
+    return t;
 }
 
 bool thermal_available(void)

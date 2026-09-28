@@ -282,13 +282,14 @@
       B(50, 8, 34), 0xc9ccd1, [0, 4, 0], [0, -25, 0], { metalness: 0.6, roughness: 0.35 }, { label: "LiPo" });
     hw.add(desk);
 
-    // ---------------------------------------------------------- rail build (clip-on ahead of an EOTech)
-    // +X is towards the muzzle. The holographic sight sits at the rear, closest
-    // to the eye; the HUD/thermal unit clips on in front of it and projects a
-    // collimated image back through the sight window (clip-on architecture).
+    // ---------------------------------------------------------- rail build: side pod + combiner ahead of an EOTech
+    // +X is towards the muzzle, +Z is the pod side. The holographic sight stays
+    // at the rear. Camera, display and electronics live in a side pod; only a
+    // thin beam-splitter combiner sits in the sight line, so the day view stays
+    // clear and the thermal/TAK image is overlaid on it.
     const rail = new THREE.Group();
-    const RAIL_TOP = 8, AXIS_Y = RAIL_TOP + 36; // sight optical axis ≈36 mm over the rail (verify on your XPS2)
-    const railBar = part(rail, "Picatinny rail (MIL-STD-1913)", "21.2 mm wide, slots 5.23 mm on a 10.01 mm pitch. On an M-LOK handguard use a Picatinny section; the sight and clip-on both need the top rail for a common axis.",
+    const RAIL_TOP = 8, AXIS_Y = RAIL_TOP + 36; // sight axis ≈36 mm over the rail (verify on your XPS2)
+    const railBar = part(rail, "Picatinny rail (MIL-STD-1913)", "21.2 mm wide, slots 5.23 mm on a 10.01 mm pitch.",
       B(300, 8, 21.2), 0x3c3f43, [0, 4, 0], [0, -10, 0], { metalness: 0.6, roughness: 0.4 }, { label: "Picatinny rail" });
     for (let i = -14; i <= 14; i++) {
       const s = new THREE.Mesh(B(5.23, 3, 22), new THREE.MeshStandardMaterial({ color: 0x15171a }));
@@ -298,51 +299,132 @@
 
     // EOTech XPS2-style holographic sight at the rear (≈89 × 53 × 64 mm)
     const EX = -95;
-    part(rail, "Holographic sight (EOTech HWS XPS2), user side", "Your aiming optic stays closest to the eye and unchanged. 1× and parallax-free, so anything placed in front of it must present a collimated image (focused at infinity).",
+    part(rail, "Holographic sight (EOTech HWS XPS2), user side", "Unchanged aiming optic closest to the eye. 1× and parallax-free, so the overlay must be collimated.",
       B(89, 22, 44), 0x2e3136, [EX, RAIL_TOP + 11, 0], [0, 0, 0], { roughness: 0.5 }, { label: "EOTech XPS2 (user side)" });
     const hoodMat = { roughness: 0.45, metalness: 0.2 };
-    part(rail, "Sight hood (left)", "Hood around the holographic window.", B(40, 44, 5), 0x2e3136, [EX + 20, RAIL_TOP + 22 + 22, 21], [0, 0, 0], hoodMat);
-    part(rail, "Sight hood (right)", "Hood around the holographic window.", B(40, 44, 5), 0x2e3136, [EX + 20, RAIL_TOP + 22 + 22, -21], [0, 0, 0], hoodMat);
-    part(rail, "Sight hood (top)", "Hood around the holographic window.", B(40, 5, 47), 0x2e3136, [EX + 20, RAIL_TOP + 22 + 44, 0], [0, 0, 0], hoodMat);
-    part(rail, "Holographic window", "≈30 × 23 mm clear aperture. The clip-on's output beam must fill it at the same height.",
-      B(3, 38, 37), 0x9fd7ff, [EX + 20, AXIS_Y, 0], [0, 0, 0], MAT.glass);
+    part(rail, "Sight hood (left)", "Hood around the holographic window.", B(40, 44, 5), 0x2e3136, [EX + 20, RAIL_TOP + 44, 21], [0, 0, 0], hoodMat);
+    part(rail, "Sight hood (right)", "Hood around the holographic window.", B(40, 44, 5), 0x2e3136, [EX + 20, RAIL_TOP + 44, -21], [0, 0, 0], hoodMat);
+    part(rail, "Sight hood (top)", "Hood around the holographic window.", B(40, 5, 47), 0x2e3136, [EX + 20, RAIL_TOP + 66, 0], [0, 0, 0], hoodMat);
+    part(rail, "Holographic window", "≈30 × 23 mm clear aperture.", B(3, 38, 37), 0x9fd7ff, [EX + 20, AXIS_Y, 0], [0, 0, 0], MAT.glass);
     part(rail, "Sight battery housing", "Transverse battery cap.", new THREE.CylinderGeometry(11 * mm, 11 * mm, 53 * mm, 32), 0x2e3136, [EX - 22, RAIL_TOP + 11, 0], [0, 0, 0])
       .rotation.x = Math.PI / 2;
 
-    // Clip-on HUD + thermal module in front
-    const CX = 40; // housing centre
-    part(rail, "Flip-to-side QD mount", "Lever-lock Picatinny base with a flip-to-side hinge: swing the clip-on out of the sight picture for day use, back in for thermal/TAK. Repeatable return keeps the boresight.",
-      B(40, 12, 34), 0x55595e, [CX - 10, RAIL_TOP + 6, 0], [0, 10, 0], { metalness: 0.5 }, { label: "Flip-to-side QD mount" });
-    part(rail, "Clip-on housing", "Rigid chassis: Boson, display, collimating lens and IMU share one frame bolted to the mount. hardware/mount/.",
-      B(120, 50, 48), 0x9aa3ab, [CX, AXIS_Y + 4, 0], [0, 60, 0], { transparent: true, opacity: 0.22, depthWrite: false }, { label: "Clip-on housing" });
-    part(rail, "FLIR Boson 640 (21640AS50)", "Faces downrange. For a true 1× overlay its FOV should match the clip-on display FOV (~15-20°): a 50° lens means cropping to the centre ~200 px; a narrower lens is a better match.",
-      B(21, 21, 21), 0x7d8288, [CX + 45, AXIS_Y, 0], [60, 60, 0], { metalness: 0.5 }, { label: "Boson 640" });
-    const lens = part(rail, "Boson lens", "50° HFOV lens (your 21640AS50).",
-      new THREE.CylinderGeometry(8 * mm, 9 * mm, 18 * mm, 32), 0x202225, [CX + 64, AXIS_Y, 0], [85, 60, 0], { metalness: 0.4 });
-    lens.rotation.z = Math.PI / 2;
-    part(rail, "Micro-OLED display", "0.39-0.6\" micro-OLED facing the rear, placed at the focal point of the objective lens. Shows thermal + TAK symbology.",
-      B(3, 14, 18), 0x111214, [CX + 10, AXIS_Y, 0], [30, 60, 0], { roughness: 0.2 }, { label: "Micro-OLED" });
-    const obj = part(rail, "Collimating objective lens", "f ≈ 50 mm, clear aperture ≥ 32 mm. Puts the display image at infinity so it is parallax-free through the 1× sight, and fills the sight window.",
-      new THREE.CylinderGeometry(18 * mm, 18 * mm, 6 * mm, 48), 0x8fd3ff, [CX - 58, AXIS_Y, 0], [-20, 60, 0], MAT.glass, { label: "Collimating lens" });
-    obj.rotation.z = Math.PI / 2;
-    part(rail, "HUD core board (ESP32-P4 + C6)", "USB-HS UVC from the Boson (or DVP), PPA blend of thermal + TAK symbology, MIPI-DSI to the micro-OLED, Wi-Fi/TAK via the C6.",
-      B(45, 2, 32), 0x1d6b3e, [CX + 18, AXIS_Y - 20, 0], [0, 70, 0], MAT.pcb);
-    part(rail, "IMU + magnetometer", "On the rigid chassis. Magnetometer as high and far from steel as the housing allows.",
-      B(6, 2, 6), 0x222222, [CX + 30, AXIS_Y + 24, 0], [0, 90, 0], null);
-    part(rail, "LiPo 2000-3000 mAh", "Low in the housing for balance; ≈5-7 h with thermal on.",
-      B(60, 10, 36), 0xc9ccd1, [CX + 22, RAIL_TOP + 17, 0], [0, 30, 0], { metalness: 0.6 });
+    // Combiner in the sight line: the only thing in front of the EOTech
+    const CBX = EX + 60;
+    const comb = part(rail, "Beam-splitter combiner (flip-up)", "≈40 × 40 mm plate beam splitter at 45°, ~70 % transmission: the day view passes straight through, the collimated display image from the side pod reflects into the sight line. Flips up out of the way when not needed.",
+      B(1.5, 40, 44), 0x9fd7ff, [CBX, AXIS_Y, 0], [0, 0, 0], { transparent: true, opacity: 0.35, roughness: 0.02, metalness: 0.3, depthWrite: false }, { label: "Combiner (flip-up)" });
+    comb.rotation.y = Math.PI / 4;
+    part(rail, "Combiner arm", "Rigid arm from the pod; hinge lets the combiner flip up.", B(12, 4, 34), 0x55595e, [CBX, AXIS_Y + 24, 14], [0, 0, 0], { metalness: 0.5 });
 
-    // Collimated beam from the clip-on back through the sight to the eye
-    const beam = new THREE.Mesh(new THREE.CylinderGeometry(15 * mm, 15 * mm, 195 * mm, 32, 1, true),
-      new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.18, side: THREE.DoubleSide, depthWrite: false }));
-    beam.rotation.z = Math.PI / 2;
-    beam.position.set((CX - 61 - 97.5) * mm, AXIS_Y * mm, 0);
-    beam.userData.noFit = true;
-    rail.add(beam);
+    // Side pod: camera, collimated display, electronics, battery
+    const PZ = 58, PX = CBX + 35;
+    part(rail, "Offset mount (top rail → side pod)", "Lever-lock Picatinny base with an offset arm to the side pod. Repeatable return keeps the thermal/display boresight.",
+      B(40, 12, 34), 0x55595e, [PX - 10, RAIL_TOP + 6, 0], [0, 10, 0], { metalness: 0.5 }, { label: "Offset QD mount" });
+    part(rail, "Offset arm", "Carries the pod beside the sight line.", B(24, 10, 44), 0x55595e, [PX - 10, RAIL_TOP + 12, 30], [0, 10, 10], { metalness: 0.5 });
+    part(rail, "Side pod housing", "Rigid chassis for the Boson, display, collimating lens and IMU. Nothing but the combiner obstructs the sight picture.",
+      B(120, 48, 62), 0x9aa3ab, [PX + 5, AXIS_Y, PZ], [0, 20, 40], { transparent: true, opacity: 0.22, depthWrite: false }, { label: "Side pod" });
+    part(rail, "FLIR Boson 640 (21640AS50)", `Faces downrange from the side, ≈${PZ} mm off the sight axis. Parallax is fixed in software: 0.03° at 100 m, 0.13° at 25 m, 0.6° at 5 m.`,
+      B(21, 21, 21), 0x7d8288, [PX + 45, AXIS_Y, PZ], [30, 20, 40], { metalness: 0.5 }, { label: "Boson 640 (side)" });
+    const lens = part(rail, "Boson lens", "50° HFOV lens.", new THREE.CylinderGeometry(8 * mm, 9 * mm, 18 * mm, 32), 0x202225,
+      [PX + 64, AXIS_Y, PZ], [50, 20, 40], { metalness: 0.4 });
+    lens.rotation.z = Math.PI / 2;
+    const obj = part(rail, "Collimating objective lens", "f ≈ 50 mm, ≥ 32 mm clear aperture, facing the combiner: puts the display image at infinity.",
+      new THREE.CylinderGeometry(18 * mm, 18 * mm, 6 * mm, 48), 0x8fd3ff, [CBX, AXIS_Y, PZ - 30], [0, 20, 30], MAT.glass, { label: "Collimating lens" });
+    obj.rotation.x = Math.PI / 2;
+    part(rail, "Micro-OLED display", "At the lens focal point, facing the combiner. Shows hot-only thermal + TAK symbology: black pixels add no light, so the day view stays clear.",
+      B(18, 14, 3), 0x111214, [CBX, AXIS_Y, PZ + 20], [0, 20, 40], { roughness: 0.2 }, { label: "Micro-OLED" });
+    part(rail, "HUD core board (ESP32-P4 + C6)", "UVC or DVP from the Boson, alignment warp + blend in the PPA, MIPI-DSI to the micro-OLED, Wi-Fi/TAK.",
+      B(45, 2, 32), 0x1d6b3e, [PX + 10, AXIS_Y - 18, PZ], [0, 20, 40], MAT.pcb);
+    part(rail, "IMU + magnetometer", "Rigid on the pod chassis.", B(6, 2, 6), 0x222222, [PX + 30, AXIS_Y + 20, PZ], [0, 30, 40]);
+    part(rail, "LiPo 2000-3000 mAh", "Inside the pod.", B(50, 10, 34), 0xc9ccd1, [PX + 12, AXIS_Y + 12, PZ], [0, 30, 40], { metalness: 0.6 });
+
+    // Light path: display → lens → combiner, then combiner → sight → eye
+    const beamMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.2, side: THREE.DoubleSide, depthWrite: false });
+    const b1 = new THREE.Mesh(new THREE.CylinderGeometry(14 * mm, 14 * mm, (PZ - 30) * mm, 32, 1, true), beamMat);
+    b1.rotation.x = Math.PI / 2;
+    b1.position.set(CBX * mm, AXIS_Y * mm, ((PZ - 30) / 2) * mm);
+    const eyeX = EX - 44.5 - 75, lenB = CBX - eyeX;
+    const b2 = new THREE.Mesh(new THREE.CylinderGeometry(14 * mm, 14 * mm, lenB * mm, 32, 1, true), beamMat);
+    b2.rotation.z = Math.PI / 2;
+    b2.position.set((CBX - lenB / 2) * mm, AXIS_Y * mm, 0);
+    b1.userData.noFit = b2.userData.noFit = true;
+    rail.add(b1, b2);
     const eyeLab = label("◄ to eye (~75 mm)", "");
     eyeLab.position.set((EX - 44 - 25) * mm, (AXIS_Y + 22) * mm, 0);
     rail.add(eyeLab);
     hw.add(rail);
+
+    // ---------------------------------------------------------- ATAK phone: Galaxy S20+ in a tan Juggernaut case
+    // S20+ is 161.9 × 73.7 × 7.8 mm; the rugged case adds bumpers and a raised lip
+    // (≈172 × 86 × 15 mm overall). Lying face up, long axis along Z.
+    function atakScreenTexture() {
+      const c = document.createElement("canvas");
+      c.width = 360; c.height = 780;
+      const x = c.getContext("2d");
+      x.fillStyle = "#1d2621"; x.fillRect(0, 0, 360, 780);
+      // imagery-ish map: terrain patches, roads, grid
+      const patches = [["#26352b", 30, 120, 180, 140], ["#2c3a30", 170, 300, 170, 160], ["#233027", 20, 470, 220, 150], ["#2f3d2f", 200, 560, 150, 170]];
+      patches.forEach(([col, px, py, w, h]) => { x.fillStyle = col; x.fillRect(px, py, w, h); });
+      x.strokeStyle = "#6b6450"; x.lineWidth = 6;
+      x.beginPath(); x.moveTo(0, 520); x.bezierCurveTo(120, 470, 200, 420, 360, 300); x.stroke();
+      x.lineWidth = 3; x.beginPath(); x.moveTo(140, 780); x.lineTo(180, 60); x.stroke();
+      x.strokeStyle = "rgba(255,255,255,.08)"; x.lineWidth = 1;
+      for (let i = 0; i < 360; i += 45) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i, 780); x.stroke(); }
+      for (let j = 0; j < 780; j += 45) { x.beginPath(); x.moveTo(0, j); x.lineTo(360, j); x.stroke(); }
+      // units: friendly rectangles, hostile diamond, self arrow
+      const fr = (px, py) => { x.fillStyle = "#38bdf8"; x.strokeStyle = "#0b2a3a"; x.lineWidth = 2; x.fillRect(px - 13, py - 9, 26, 18); x.strokeRect(px - 13, py - 9, 26, 18); };
+      fr(150, 330); fr(95, 260); fr(250, 210);
+      x.fillStyle = "#ff6b6b"; x.beginPath(); x.moveTo(190, 120); x.lineTo(206, 136); x.lineTo(190, 152); x.lineTo(174, 136); x.closePath(); x.fill();
+      x.fillStyle = "#ffffff"; x.beginPath(); x.moveTo(180, 470); x.lineTo(196, 510); x.lineTo(180, 500); x.lineTo(164, 510); x.closePath(); x.fill();
+      x.strokeStyle = "rgba(255,255,255,.6)"; x.setLineDash([6, 6]); x.beginPath(); x.moveTo(180, 470); x.lineTo(190, 150); x.stroke(); x.setLineDash([]);
+      // ATAK-style chrome
+      x.fillStyle = "rgba(0,0,0,.72)"; x.fillRect(0, 0, 360, 58); x.fillRect(0, 722, 360, 58);
+      x.fillStyle = "#e8e8e8"; x.font = "bold 22px Bahnschrift, Segoe UI, sans-serif"; x.fillText("ATAK", 16, 38);
+      x.font = "15px Bahnschrift, Segoe UI, sans-serif"; x.fillStyle = "#bdbdbd"; x.fillText("KYLE · 10S EG 9831 4512", 92, 37);
+      x.fillStyle = "#34d399"; x.beginPath(); x.arc(334, 30, 7, 0, Math.PI * 2); x.fill();
+      ["⊕", "◎", "✎", "☰"].forEach((g, i) => { x.fillStyle = "#e0e0e0"; x.font = "26px Segoe UI Symbol, sans-serif"; x.fillText(g, 34 + i * 88, 762); });
+      const t = new THREE.CanvasTexture(c);
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.anisotropy = 4;
+      return t;
+    }
+    const RBox = addons.RoundedBoxGeometry;
+    const RB = (w, h, d, r) => (RBox ? new RBox(w * mm, h * mm, d * mm, 4, r * mm) : B(w, h, d));
+    function makePhone(group, pos, explode) {
+      const TAN = 0xb99b6b;
+      const body = part(group, "ATAK phone: Samsung Galaxy S20+ in a tan Juggernaut case",
+        "USB-C to the hub's PHONE port. The ATAK plugin sends tracks and the phone's GPS; the HUD sends back its attitude. Rugged case: raised bumpers and lip around the screen, strap plate on the back.",
+        RB(86, 15, 172, 7), TAN, pos, explode, { roughness: 0.85, metalness: 0.0 }, { label: "ATAK phone (S20+, tan Juggernaut)" });
+      const top = 7.5;
+      // corner bumpers
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => {
+        const bump = new THREE.Mesh(RB(20, 17, 24, 5), new THREE.MeshStandardMaterial({ color: 0xa88a5c, roughness: 0.9 }));
+        bump.position.set(sx * 35 * mm, 0, sz * 76 * mm);
+        bump.castShadow = true;
+        body.add(bump);
+      });
+      // glass + screen (inset under the case lip)
+      const glass = new THREE.Mesh(RB(72, 1.2, 158, 5), new THREE.MeshStandardMaterial({ color: 0x050607, roughness: 0.08, metalness: 0.2 }));
+      glass.position.y = (top - 0.3) * mm;
+      body.add(glass);
+      const scr = new THREE.Mesh(new THREE.PlaneGeometry(66 * mm, 146 * mm),
+        new THREE.MeshBasicMaterial({ map: atakScreenTexture(), toneMapped: false }));
+      scr.rotation.x = -Math.PI / 2;
+      scr.position.y = (top + 0.35) * mm;
+      body.add(scr);
+      // punch-hole camera and side buttons
+      const hole = new THREE.Mesh(new THREE.CylinderGeometry(1.6 * mm, 1.6 * mm, 0.4 * mm, 16), new THREE.MeshBasicMaterial({ color: 0x000000 }));
+      hole.position.set(0, (top + 0.4) * mm, -75.5 * mm);
+      body.add(hole);
+      const btn = new THREE.Mesh(B(3, 5, 22), new THREE.MeshStandardMaterial({ color: 0x8f7650, roughness: 0.9 }));
+      btn.position.set(44 * mm, 1 * mm, -30 * mm);
+      body.add(btn);
+      // USB-C port cut-out at the bottom edge
+      const port = new THREE.Mesh(B(9, 3.4, 2), new THREE.MeshBasicMaterial({ color: 0x111111 }));
+      port.position.set(0, 0, 86.2 * mm);
+      body.add(port);
+      return body;
+    }
 
     // ---------------------------------------------------------- hub build (V2H), from pcb.js
     const hub = new THREE.Group();
@@ -377,8 +459,7 @@
     part(hub, "FLIR Boson 640 + lens", "Powered and read over USB by the hub (VPC now, direct 80-pin connector later).",
       B(21, 21, 21), 0x7d8288, [toX(52) - 20, 10.5, edgeZ + 45], [-20, 0, 30], { metalness: 0.5 }, { label: "Boson 640 + VPC" });
     part(hub, "Boson USB VPC (421-0061-00)", "USB-C video/power/control board behind the camera.", B(21, 4, 21), 0x1d6b3e, [toX(52) - 20, 23, edgeZ + 45], [-20, 4, 30], MAT.pcb);
-    part(hub, "ATAK phone", "USB-C to the PHONE port. The plugin sends tracks and its GPS; the HUD sends back attitude.",
-      B(75, 8, 160), 0x1b1d21, [-P.board.w / 2 - 50, 4, -20], [-30, 0, -20], { roughness: 0.3 }, { label: "ATAK phone", noFit: true });
+    makePhone(hub, [-125, 7.5, 5], [-30, 0, 0]);
     function cable(a, b) {
       const pts = [a, new THREE.Vector3((a.x + b.x) / 2, Math.min(a.y, b.y) - 6, (a.z + b.z) / 2), b].map((v) => v.clone().multiplyScalar(mm));
       const m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 32, 1.6 * mm, 10), new THREE.MeshStandardMaterial({ color: 0x2b2d31, roughness: 0.6 }));
@@ -386,7 +467,7 @@
       hub.add(m);
     }
     cable(new THREE.Vector3(toX(52), top + 1.6, edgeZ + 2), new THREE.Vector3(toX(52) - 20, 23, edgeZ + 34));
-    cable(new THREE.Vector3(toX(64), top + 1.6, edgeZ + 2), new THREE.Vector3(-P.board.w / 2 - 12, 8, 30));
+    cable(new THREE.Vector3(toX(64), top + 1.6, edgeZ + 2), new THREE.Vector3(-125, 7.5, 93));
     hw.add(hub);
 
     // ---------------------------------------------------------- build switch, fit, pick

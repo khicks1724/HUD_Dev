@@ -137,6 +137,9 @@ esp_err_t hud_config_load(void)
     BLOB("bore_r", bore_roll_deg);
     BLOB("mount", mount);
     BLOB("mag_off", mag_offset);
+    BLOB("th_dx", th_shift_x);
+    BLOB("th_dy", th_shift_y);
+    BLOB("th_roll", th_roll_deg);
     BLOB("max_rng", max_range_m);
     BLOB("radar_rng", radar_range_m);
     nvs_close(h);
@@ -181,6 +184,9 @@ esp_err_t hud_config_save(void)
     nvs_set_blob(h, "bore_r", &c->bore_roll_deg, sizeof(float));
     nvs_set_blob(h, "mount", c->mount, sizeof(c->mount));
     nvs_set_blob(h, "mag_off", c->mag_offset, sizeof(c->mag_offset));
+    nvs_set_blob(h, "th_dx", &c->th_shift_x, sizeof(float));
+    nvs_set_blob(h, "th_dy", &c->th_shift_y, sizeof(float));
+    nvs_set_blob(h, "th_roll", &c->th_roll_deg, sizeof(float));
     nvs_set_blob(h, "max_rng", &c->max_range_m, sizeof(float));
     nvs_set_blob(h, "radar_rng", &c->radar_range_m, sizeof(float));
     err = nvs_commit(h);

@@ -117,6 +117,41 @@ What that changes:
   to the micro-OLED) or the V2H hub driving a micro-OLED. The Waveshare
   prism head stays a bench/desk demonstrator.
 
+## Recommended: side pod + combiner (don't block the sight)
+
+Instead of a clip-on sitting in the sight line, put the **camera, display and
+electronics in a side pod** and leave only a thin **beam-splitter combiner**
+(≈40 × 40 mm glass plate at 45°, ~70 % transmission, flip-up) in front of
+the EOTech:
+
+```
+            side pod (offset mount)                     sight line
+  [Boson]──► downrange                                     │
+  [micro-OLED]─f≈50mm─[collimating lens]──► beam ──► [combiner 45°] ═══► [EOTech] ◄ eye
+  [P4 board · IMU · LiPo]                                  │  day view passes straight through
+```
+
+- **The day view stays clear.** You look through the combiner and the
+  EOTech as normal. The thermal/TAK image is reflected in on top. In
+  **hot-only** mode black pixels add no light, so only warm targets and
+  symbology appear.
+- **Parallax from the side offset is small and fixed in software.** At a
+  ~58 mm offset the camera sees 0.03° off at 100 m, 0.13° at 25 m and 0.6°
+  at 5 m. The display is ~0.17°/px on a 40° × 240 px HUD, so it's under a
+  pixel beyond ~20 m. Boresight at a chosen range with `thal <dx> <dy>`.
+  Range-dependent correction is possible later using the TAK target's range.
+- **Rotate or align in software.** Mechanical roll misalignment of 1-2° and
+  any fixed offset are corrected per pixel with `thal <dx> <dy> <roll>`
+  (firmware `hud_render.c`; the page's renderer does the same). Mounting the
+  camera rotated 90° for packaging is also fine, since the P4's pixel
+  accelerator rotates 90° for free.
+- **What still has to be optical:** the display must be collimated (lens at
+  its focal length) so it's parallax-free through the 1× EOTech. Software
+  can't replace that.
+- **Mounting:** an offset QD base on the top rail, or a 45° offset/side rail
+  on the handguard. Keep the pod, camera and combiner arm on one rigid
+  chassis so the alignment survives recoil and remounting.
+
 ## Files
 
 - [hud_rail_mount.scad](hud_rail_mount.scad): parametric OpenSCAD concept

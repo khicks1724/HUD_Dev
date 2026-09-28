@@ -42,6 +42,10 @@ typedef struct {
      * is the central crop. See docs/THERMAL.md. */
     int src_x, src_y, src_w, src_h;
     uint8_t hot_threshold;
+    /* Camera-to-display alignment, applied when drawing (docs/THERMAL.md):
+     * a side-mounted camera needs a fixed shift and a small roll correction.
+     * shift is in HUD pixels, roll in degrees (+ = image rotates clockwise). */
+    float shift_x, shift_y, roll_deg;
 } hud_thermal_t;
 
 typedef struct {

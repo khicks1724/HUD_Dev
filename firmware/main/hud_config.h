@@ -42,6 +42,8 @@ typedef struct {
     float bore_pitch_deg, bore_roll_deg; /* level trim */
     float mount[9];                     /* sensor -> HUD body rotation, row major */
     float mag_offset[3];                /* hard-iron, gauss */
+    float th_shift_x, th_shift_y;       /* thermal camera alignment, HUD px */
+    float th_roll_deg;                  /* thermal camera roll correction */
 
     float max_range_m;
     float radar_range_m;

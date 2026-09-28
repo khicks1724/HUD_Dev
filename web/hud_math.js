@@ -349,12 +349,16 @@
   function drawThermal(g, th, mode) {
     if (!th || !th.px) return;
     const hot = mode === THERMAL.HOT;
+    // same inverse mapping as hud_render.c: undo shift, undo roll, scale into crop
+    const cxs = (g.w - 1) / 2, cys = (g.h - 1) / 2, r = -(th.roll || 0) * D2R, cr = Math.cos(r), sr = Math.sin(r);
+    const kx = th.srcW / g.w, ky = th.srcH / g.h, dx = th.shiftX || 0, dy = th.shiftY || 0;
     for (let y = 0; y < g.h; y++) {
-      const sy = th.srcY + (y * th.srcH / g.h | 0);
-      if (sy < 0 || sy >= th.h) continue;
+      const v0 = y - cys - dy;
       for (let x = 0; x < g.w; x++) {
-        const sx = th.srcX + (x * th.srcW / g.w | 0);
-        if (sx < 0 || sx >= th.w) continue;
+        const u0 = x - cxs - dx;
+        const u = u0 * cr - v0 * sr + cxs, vv = u0 * sr + v0 * cr + cys;
+        const sx = th.srcX + (u * kx | 0), sy = th.srcY + (vv * ky | 0);
+        if (u < 0 || vv < 0 || sx < 0 || sx >= th.w || sy < 0 || sy >= th.h) continue;
         let v = th.px[sy * th.w + sx];
         if (hot) { if (v < th.hot) continue; v = 120 + ((v - th.hot) * 135 / (256 - th.hot) | 0); } else v = v * 3 / 4 | 0;
         g.px[y * g.w + x] = rgb(v, v, v); // white-hot, black-cold

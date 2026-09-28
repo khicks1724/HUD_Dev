@@ -280,6 +280,19 @@ static int cmd_thermal(int argc, char **argv)
     return 0;
 }
 
+static int cmd_thal(int argc, char **argv)
+{
+    if (argc < 3) {
+        printf("usage: thal <dx_px> <dy_px> [roll_deg]   (align a side-mounted thermal camera)\n"
+               "now: dx=%.1f dy=%.1f roll=%.2f\n", g_cfg.th_shift_x, g_cfg.th_shift_y, g_cfg.th_roll_deg);
+        return 1;
+    }
+    g_cfg.th_shift_x = (float)atof(argv[1]);
+    g_cfg.th_shift_y = (float)atof(argv[2]);
+    g_cfg.th_roll_deg = argc > 3 ? (float)atof(argv[3]) : 0.0f;
+    return 0;
+}
+
 static int cmd_mirror(int argc, char **argv)
 {
     if (argc < 3) {
@@ -345,6 +358,7 @@ void console_start(void)
         {.command = "imu", .help = "raw sensor values", .func = cmd_imu},
         {.command = "mode", .help = "mode <0-3>: display mode", .func = cmd_mode},
         {.command = "thermal", .help = "cycle thermal underlay", .func = cmd_thermal},
+        {.command = "thal", .help = "thal <dx> <dy> [roll]: thermal camera alignment", .func = cmd_thal},
         {.command = "mirror", .help = "mirror <x> <y>: LCD mirroring for the prism", .func = cmd_mirror},
         {.command = "bright", .help = "bright <0-100>", .func = cmd_bright},
         {.command = "save", .help = "persist settings to flash", .func = cmd_save},

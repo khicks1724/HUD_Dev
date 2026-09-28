@@ -96,7 +96,7 @@ int main(void)
                 if (xx >= 0 && xx < 640 && yy >= 0 && yy < 512) th[yy * 640 + xx] = (uint8_t)(235 - abs(dx) * 4 - abs(dy));
             }
     }
-    hud_thermal_t tf = {th, 640, 512, 0, 0, 0, 0, 170};
+    hud_thermal_t tf = {th, 640, 512, 0, 0, 0, 0, 170, 0, 0, 0};
     const float half = fx_cam * tanf(20.0f * 3.14159265f / 180.0f);
     tf.src_w = tf.src_h = (int)(2 * half);
     tf.src_x = (640 - tf.src_w) / 2;
