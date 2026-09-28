@@ -1,0 +1,110 @@
+menu "TAK HUD"
+
+    config HUD_WIFI_SSID
+        string "Default Wi-Fi SSID (2.4 GHz only)"
+        default ""
+        help
+            Used when the hudcfg partition has no SSID. Prefer tools/provision.py
+            or the serial console "wifi" command so credentials stay out of git.
+
+    config HUD_WIFI_PASS
+        string "Default Wi-Fi password"
+        default ""
+
+    choice HUD_TAK_PROTO
+        prompt "Default TAK connection"
+        default HUD_TAK_PROTO_OFF
+        config HUD_TAK_PROTO_OFF
+            bool "Off (fake targets / mesh only)"
+        config HUD_TAK_PROTO_TCP
+            bool "Plain TCP streaming (TAK Server 8087, tools/sim_server.py)"
+        config HUD_TAK_PROTO_TLS
+            bool "TLS streaming with client certificate (TAK Server 8089)"
+    endchoice
+
+    config HUD_TAK_HOST
+        string "Default TAK server host"
+        default "192.168.1.10"
+
+    config HUD_TAK_PORT
+        int "Default TAK server port"
+        default 8087
+
+    config HUD_OWN_UID
+        string "UID of the ATAK device that supplies own position (V1)"
+        default ""
+        help
+            The HUD follows this TAK unit's position as its own. Find it in ATAK:
+            Settings > Network Preferences > (device UID) or in the TAK Server
+            client list. A callsign match also works (see OWN_CALLSIGN).
+
+    config HUD_OWN_CALLSIGN
+        string "Callsign of the ATAK device that supplies own position"
+        default ""
+
+    config HUD_UID
+        string "This HUD's own CoT UID"
+        default "HUD-001"
+
+    config HUD_FAKE_TARGETS
+        bool "Start with simulated targets enabled"
+        default y
+
+    config HUD_MESH_SA
+        bool "Listen to ATAK SA multicast (239.2.3.1:6969)"
+        default y
+
+    config HUD_UDP_PORT
+        int "UDP port for position/heading input (phone, sim_server.py)"
+        default 4349
+
+    config HUD_FAKE_LAT
+        string "Fake/initial observer latitude"
+        default "36.5967"
+
+    config HUD_FAKE_LON
+        string "Fake/initial observer longitude"
+        default "-121.8750"
+
+    config HUD_HFOV_DEG
+        int "Horizontal field of view through the prism (degrees x10)"
+        default 400
+        help
+            Initial guess. Measure it with the CALIB screen (docs/CALIBRATION.md).
+
+    config HUD_VFOV_DEG
+        int "Vertical field of view through the prism (degrees x10)"
+        default 400
+
+    config HUD_MIRROR_X
+        bool "Mirror display horizontally (prism reflection)"
+        default y
+
+    config HUD_MIRROR_Y
+        bool "Mirror display vertically"
+        default n
+
+    config HUD_LCD_PCLK_MHZ
+        int "LCD SPI clock (MHz)"
+        default 60
+        range 10 80
+
+    config HUD_BACKPACK
+        bool "Backpack board fitted (GNSS + magnetometer on header)"
+        default n
+
+    choice HUD_THERMAL_SOURCE
+        prompt "Thermal underlay source"
+        default HUD_THERMAL_NONE
+        help
+            FLIR Boson overlay (docs/THERMAL.md). SYNTHETIC draws a moving test
+            pattern so the toggle and FOV crop can be tested without a camera.
+        config HUD_THERMAL_NONE
+            bool "None"
+        config HUD_THERMAL_SYNTHETIC
+            bool "Synthetic test pattern"
+        config HUD_THERMAL_DVP
+            bool "FLIR Boson 8-bit CMOS via DVP (not implemented yet)"
+    endchoice
+
+endmenu

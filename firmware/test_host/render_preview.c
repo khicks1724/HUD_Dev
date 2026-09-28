@@ -1,0 +1,83 @@
+/*
+ * Render HUD frames on a PC with the exact firmware renderer and write them
+ * as PPM images (convert to PNG with tools/ppm_to_png.py).
+ *
+ *   ./run_tests.sh preview      -> preview_normal.ppm, preview_calib.ppm, ...
+ */
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "hud_geo.h"
+#include "hud_render.h"
+
+static uint16_t fb[240 * 240];
+
+static void write_ppm(const char *path, const gfx_t *g, int scale)
+{
+    FILE *f = fopen(path, "wb");
+    if (!f) return;
+    fprintf(f, "P6\n%d %d\n255\n", g->w * scale, g->h * scale);
+    for (int y = 0; y < g->h * scale; y++) {
+        for (int x = 0; x < g->w * scale; x++) {
+            uint16_t v = g->px[(y / scale) * g->w + x / scale];
+            v = (uint16_t)((v >> 8) | (v << 8)); /* stored big-endian */
+            const unsigned char rgb[3] = {(unsigned char)((v >> 11) << 3), (unsigned char)(((v >> 5) & 0x3F) << 2),
+                                          (unsigned char)((v & 0x1F) << 3)};
+            fwrite(rgb, 1, 3, f);
+        }
+    }
+    fclose(f);
+    printf("wrote %s\n", path);
+}
+
+int main(void)
+{
+    gfx_t g = {fb, 240, 240};
+    const hud_lla_t me = {36.5967, -121.8750, 20.0};
+    struct {
+        const char *cs;
+        double e, n, u;
+        hud_affil_t a;
+        hud_dim_t d;
+    } units[] = {
+        {"ALPHA1", 120, 320, 2, HUD_AFFIL_FRIEND, HUD_DIM_GROUND},
+        {"BRAVO3", -260, 560, -5, HUD_AFFIL_FRIEND, HUD_DIM_GROUND},
+        {"UAV12", 300, 1700, 480, HUD_AFFIL_FRIEND, HUD_DIM_AIR},
+        {"TGT-H1", 30, 1400, 10, HUD_AFFIL_HOSTILE, HUD_DIM_GROUND},
+        {"CIV", -900, 300, 0, HUD_AFFIL_NEUTRAL, HUD_DIM_GROUND},
+        {"UNK", 900, -700, 0, HUD_AFFIL_UNKNOWN, HUD_DIM_GROUND},
+    };
+    const int n = (int)(sizeof(units) / sizeof(units[0]));
+    hud_rtarget_t t[8];
+    for (int i = 0; i < n; i++) {
+        t[i] = (hud_rtarget_t){{(float)units[i].e, (float)units[i].n, (float)units[i].u},
+                               units[i].a, units[i].d, units[i].cs, 1.0f, false};
+    }
+    (void)me;
+
+    hud_scene_t s = {0};
+    s.mode = HUD_MODE_NORMAL;
+    hud_euler_t e = {8.0f, 2.0f, 4.0f};
+    s.q = hud_quat_from_euler(&e);
+    hud_proj_cfg_from_fov(&s.proj, 240, 240, 40.0f, 40.0f);
+    s.own_pos_valid = true;
+    s.pos_source = "TAK";
+    s.hdg_source = "GYRO+BORE";
+    s.link_state = 2;
+    s.max_range_m = 5000;
+    s.radar_range_m = 2000;
+    s.max_labels = 6;
+
+    hud_render(&g, &s, t, n);
+    write_ppm("preview_normal.ppm", &g, 2);
+
+    s.mode = HUD_MODE_CALIB;
+    hud_render(&g, &s, t, n);
+    write_ppm("preview_calib.ppm", &g, 2);
+
+    s.mode = HUD_MODE_MINIMAL;
+    hud_render(&g, &s, t, n);
+    write_ppm("preview_minimal.ppm", &g, 2);
+    return 0;
+}

@@ -1,0 +1,9 @@
+# Name,    Type, SubType,  Offset,   Size,    Flags
+nvs,       data, nvs,      0x9000,   0x6000,
+phy_init,  data, phy,      0xf000,   0x1000,
+factory,   app,  factory,  0x10000,  0x300000,
+# HUD configuration + TAK certificates (NVS format). Written by
+# tools/provision.py so the certs never have to be compiled into firmware.
+hudcfg,    data, nvs,      0x310000, 0x20000,
+# When flash encryption is enabled (docs/SECURITY.md), add:
+# nvs_keys,  data, nvs_keys, 0x330000, 0x1000,  encrypted
