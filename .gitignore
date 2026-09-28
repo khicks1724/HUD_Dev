@@ -22,3 +22,6 @@ __pycache__/
 .venv/
 .vscode/
 .idea/
+firmware/test_host/*.exe
+firmware/test_host/render_preview
+firmware/test_host/cot_dump
