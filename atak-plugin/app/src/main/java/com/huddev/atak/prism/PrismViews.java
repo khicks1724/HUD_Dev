@@ -104,6 +104,8 @@ final class PrismViews {
         private final Paint txt = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint big = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint box = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint fill = new Paint();
+        private final RectF readout = new RectF();
         private float heading = Float.NaN, pitch, roll;
         private boolean live;
 
@@ -160,11 +162,10 @@ final class PrismViews {
             line.setAlpha(255);
             // centre readout box
             String hs = String.format(Locale.US, "%03d", Math.round(heading) % 360);
-            RectF r = new RectF(cx - 30 * d, 6 * d, cx + 30 * d, 34 * d);
-            Paint fill = new Paint();
+            readout.set(cx - 30 * d, 6 * d, cx + 30 * d, 34 * d);
             fill.setColor(Color.BLACK);
-            c.drawRect(r, fill);
-            c.drawRect(r, box);
+            c.drawRect(readout, fill);
+            c.drawRect(readout, box);
             c.drawText(hs + "°", cx, 27 * d, big);
             // artificial horizon strip below: roll-rotated line, offset by pitch
             float hy = h * 0.72f + pitch * 0.9f * d;

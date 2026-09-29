@@ -17,6 +17,7 @@ import com.atak.plugins.impl.PluginContextProvider;
 import com.atakmap.android.maps.MapView;
 import com.atakmap.android.maps.Marker;
 import com.atakmap.coremap.maps.coords.GeoPoint;
+import com.atakmap.coremap.maps.coords.MGRSPoint;
 
 import org.json.JSONObject;
 
@@ -144,7 +145,10 @@ public final class PrismPlugin implements IPlugin {
     private void loop() {
         try {
             link.poll();
-            if (link.isOpen()) {
+            if (!link.isOpen()) {
+                HudFeeder.Snapshot s = feeder.collect();   // still show where we are
+                fixText = s.fix != null ? formatFix(s.fix) : "—";
+            } else {
                 if (!greeted) {
                     link.send("");
                     link.send("fake off");       // HUD boots into demo targets
@@ -152,7 +156,8 @@ public final class PrismPlugin implements IPlugin {
                     greeted = true;
                 }
                 HudFeeder.Snapshot s = feeder.collect();
-                if (s.fix != null && link.send(s.fix)) fixText = formatFix(s.fix);
+                fixText = s.fix != null ? formatFix(s.fix) : "—";
+                if (s.fix != null) link.send(s.fix);
                 if (tick % 2 == 0) {
                     int n = 0;
                     for (String line : s.tracks) {
@@ -170,14 +175,21 @@ public final class PrismPlugin implements IPlugin {
         if (handler != null) handler.postDelayed(this::loop, TICK_MS);
     }
 
+    /** "fix <lat> <lon> <hae>" as 10-digit MGRS, e.g. "11S MS 12345 67890". */
     private static String formatFix(String fixLine) {
         String[] p = fixLine.split(" ");
         if (p.length < 4) return "—";
         try {
-            return String.format(Locale.US, "%.5f, %.5f", Double.parseDouble(p[1]), Double.parseDouble(p[2]));
-        } catch (NumberFormatException e) {
+            MGRSPoint m = new MGRSPoint(Double.parseDouble(p[1]), Double.parseDouble(p[2]));
+            return String.format(Locale.US, "%s %s %05d %05d", m.getZoneDescriptor(), m.getGridDescriptor(),
+                    digits(m.getEastingDescriptor()), digits(m.getNorthingDescriptor()));
+        } catch (RuntimeException e) {
             return "—";
         }
+    }
+
+    private static int digits(String metres) {
+        return (int) Math.floor(Double.parseDouble(metres.trim())) % 100000;
     }
 
     private void send(String cmd) {
@@ -229,7 +241,7 @@ public final class PrismPlugin implements IPlugin {
         vFix.setText(fixText);
         vSent.setText(String.valueOf(tracksSent));
         vHudTracks.setText(hudTracks < 0 ? "—" : String.valueOf(hudTracks));
-        vLink.setText(hudLink == 2 ? "WI-FI + TAK" : hudLink == 1 ? "WI-FI" : hudLink == 0 ? "USB ONLY" : "—");
+        vLink.setText(hudLink == 2 ? "WI-FI + TAK" : hudLink == 1 ? "WI-FI" : hudLink == 0 ? "USB" : "—");
         if (live && hudMode >= 0) segMode.select(hudMode);
         if (live && hudThermal >= 0) segThermal.select(hudThermal);
         vNote.setText(note);
@@ -303,7 +315,7 @@ public final class PrismPlugin implements IPlugin {
         LinearLayout f1 = row();
         vFix = value();
         vFix.setTextSize(15);
-        f1.addView(t.tile("Your position → HUD", vFix), t.weight(1, 3));
+        f1.addView(t.tile("Your position (MGRS) → HUD", vFix), t.weight(1, 3));
         col.addView(f1);
         col.addView(t.space(6));
         LinearLayout f2 = row();
@@ -381,11 +393,11 @@ public final class PrismPlugin implements IPlugin {
         a2.addView(save, t.weight(1, 3));
         col.addView(a2);
         col.addView(t.space(6));
-        TextView flip = t.button("Flip IMU (pitch/roll reversed)");
+        TextView flip = t.button("Flip IMU");
         flip.setOnClickListener(v -> {
             send("cal flip");
             send("save");
-            note = "IMU turned 180° and saved. Tap again to undo.";
+            note = "IMU turned 180° and saved: use if pitch and roll move the wrong way. Tap again to undo.";
             refresh();
         });
         col.addView(flip);
