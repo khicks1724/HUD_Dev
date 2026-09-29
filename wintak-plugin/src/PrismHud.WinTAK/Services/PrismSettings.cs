@@ -15,6 +15,7 @@ namespace PrismHud.WinTAK.Services
         public int Zoom;                      // 0 1x, 1 2x, 2 4x
         public int Enhance = 5;               // AUTO horizontal
         public int RangeIndex = 2;            // 20 km
+        public int ThermalMode = 2;           // HUD thermal view while a camera streams: 1 Full, 2 Hot
 
         private static string PathName =>
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WinTAK", "PrismHud", "settings.json");

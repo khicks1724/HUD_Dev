@@ -44,6 +44,7 @@ namespace PrismHud.WinTAK.Services
             Thermal = new ThermalPipeline(Hud, Camera) { CameraHfovDeg = Settings.CameraHfovDeg, TargetFps = Settings.ThermalFps };
             Feeder = new TrackFeeder(location, renderer, groups) { MaxRangeM = RangesM[Settings.RangeIndex] };
             Hud.Connected += OnHudConnected;
+            Camera.StreamStarted += OnCameraStreaming;
             Hud.Start();
             Camera.Start();
             timer = new Timer(_ => Loop(), null, 1500, 1000);
@@ -52,10 +53,27 @@ namespace PrismHud.WinTAK.Services
             testTimer = new Timer(_ => TestFrame(), null, 1000, 100);
         }
 
+        /// <summary>HUD (re)connected, e.g. replugged, which also reboots it: give it
+        /// the palette, range and, if a camera is streaming, the thermal view back.</summary>
         private static void OnHudConnected()
         {
             Hud.SendPalette(Palettes.Build(Settings.Palette));
             Hud.SendLine("range " + ((int)RangesM[Settings.RangeIndex]).ToString(System.Globalization.CultureInfo.InvariantCulture));
+            if ((Camera.Streaming || TestPattern) && Settings.ThermalMode > 0) Hud.SendLine("thermal " + Settings.ThermalMode);
+        }
+
+        /// <summary>A camera started streaming (first time or after a replug).</summary>
+        private static void OnCameraStreaming()
+        {
+            Hud.SendPalette(Palettes.Build(Settings.Palette));
+            if (Settings.ThermalMode > 0) Hud.SendLine("thermal " + Settings.ThermalMode);
+        }
+
+        public static void SetThermalMode(int mode)
+        {
+            Settings.ThermalMode = mode;
+            Settings.Save();
+            Hud.SendLine("thermal " + mode);
         }
 
         /// <summary>WinTAK is closing: stop timers and release both COM ports.</summary>
@@ -83,7 +101,7 @@ namespace PrismHud.WinTAK.Services
 
         private static void TestFrame()
         {
-            if (!TestPattern || (Camera.IsOpen && Camera.Fps > 1)) return;
+            if (!TestPattern || Camera.Streaming) return;
             const int W = RpxCamera.Width, H = RpxCamera.Height;
             var t = Environment.TickCount / 1000.0;
             var cx = W * (0.5 + 0.3 * Math.Sin(t * 0.7));

@@ -57,6 +57,7 @@ namespace PrismHud.WinTAK.Views
         private readonly int[] previewPx = new int[ThermalPipeline.OutW * ThermalPipeline.OutH];
         private int[] paletteBgr = new int[256];
         private byte[] pendingPreview;
+        private bool previewBlank;
 
         private Pill hudPill, camPill;
         private TextBlock vHeading, vPitch, vRoll, vFix, vSent, vOnHud, vLink, vNote, vCamInfo;
@@ -186,7 +187,7 @@ namespace PrismHud.WinTAK.Views
             // thermal
             col.Children.Add(Label("Thermal"));
             col.Children.Add(Space(6));
-            segThermal = new Segmented(ThermalModes, i => Send("thermal " + i));
+            segThermal = new Segmented(ThermalModes, i => PrismRuntime.SetThermalMode(i));
             col.Children.Add(segThermal);
             col.Children.Add(Space(6));
             var test = new Chip("Test pattern (no camera)");
@@ -194,7 +195,7 @@ namespace PrismHud.WinTAK.Views
             {
                 PrismRuntime.TestPattern = !PrismRuntime.TestPattern;
                 test.On = PrismRuntime.TestPattern;
-                if (PrismRuntime.TestPattern) Send("thermal 1");
+                if (PrismRuntime.TestPattern && PrismRuntime.Settings.ThermalMode > 0) Send("thermal " + PrismRuntime.Settings.ThermalMode);
             };
             col.Children.Add(test);
             col.Children.Add(Space(8));
@@ -413,6 +414,7 @@ namespace PrismHud.WinTAK.Views
                 var f = pendingPreview;
                 if (f == null) return;
                 pendingPreview = null;
+                previewBlank = false;
                 var pal = paletteBgr;
                 for (var i = 0; i < f.Length; i++) previewPx[i] = pal[f[i]];
                 previewBmp.WritePixels(new Int32Rect(0, 0, ThermalPipeline.OutW, ThermalPipeline.OutH), previewPx, ThermalPipeline.OutW * 4, 0);
@@ -429,7 +431,7 @@ namespace PrismHud.WinTAK.Views
             if (live) hudPill.Set("HUD " + hud.PortName, Ok);
             else if (hud.IsOpen) hudPill.Set("HUD waiting", Warn);
             else hudPill.Set("No HUD", Bad);
-            if (cam.IsOpen && cam.Fps > 1) camPill.Set("RPX " + cam.Fps.ToString("0", CultureInfo.InvariantCulture) + " fps", Ok);
+            if (cam.Streaming) camPill.Set("RPX " + cam.Fps.ToString("0", CultureInfo.InvariantCulture) + " fps", Ok);
             else if (cam.IsOpen) camPill.Set("RPX waiting", Warn);
             else camPill.Set("No camera", Bad);
             hudPill.ToolTip = hud.LastError;
@@ -443,13 +445,20 @@ namespace PrismHud.WinTAK.Views
             vOnHud.Text = live && st.Tracks >= 0 ? st.Tracks.ToString(CultureInfo.InvariantCulture) : "—";
             vLink.Text = !live ? "—" : st.Link == 2 ? "TAK+USB" : st.Link == 1 ? "WI-FI+USB" : "USB";
 
+            // no camera and no test pattern: blank the preview instead of freezing the last frame
+            if (!cam.Streaming && !PrismRuntime.TestPattern && !previewBlank)
+            {
+                Array.Clear(previewPx, 0, previewPx.Length);
+                previewBmp.WritePixels(new Int32Rect(0, 0, ThermalPipeline.OutW, ThermalPipeline.OutH), previewPx, ThermalPipeline.OutW * 4, 0);
+                previewBlank = true;
+            }
             var th = PrismRuntime.Thermal;
-            vCamInfo.Text = cam.IsOpen
+            vCamInfo.Text = cam.Streaming
                 ? string.Format(CultureInfo.InvariantCulture, "Camera {0:0.#}° HFOV ({1:0.#}° at {2}x) · to HUD {3:0.0} fps{4}{5}",
                     th.CameraHfovDeg, th.EffectiveHfov, cam.ZoomFactor, th.SentFps,
                     live && st.ThermalSource == "usb" ? " · HUD showing it" : live ? " · HUD not showing it yet" : "",
                     float.IsNaN(cam.Temperature) ? "" : string.Format(CultureInfo.InvariantCulture, " · core {0:0}°C", cam.Temperature))
-                : cam.LastError;
+                : cam.IsOpen ? "RPX camera on " + cam.PortName + ", starting its stream…" : cam.LastError;
 
             if (live)
             {

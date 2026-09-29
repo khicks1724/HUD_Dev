@@ -47,7 +47,25 @@ namespace PrismHud.WinTAK.Services
 
         public void Start()
         {
-            watchdog = new Timer(_ => EnsureOpen(), null, 0, 2000);
+            watchdog = new Timer(_ => Watch(), null, 0, 1000);
+        }
+
+        private void Watch()
+        {
+            try
+            {
+                // unplugged (port gone from Windows): drop it so a replug reconnects
+                if (IsOpen && Array.IndexOf(SerialPort.GetPortNames(), PortName) < 0)
+                {
+                    LastError = "HUD unplugged";
+                    Close();
+                }
+                EnsureOpen();
+            }
+            catch (Exception e)
+            {
+                LastError = e.Message;
+            }
         }
 
         private void EnsureOpen()
@@ -81,6 +99,7 @@ namespace PrismHud.WinTAK.Services
                 };
                 p.DataReceived += OnData;
                 p.Open();
+                GC.SuppressFinalize(p.BaseStream); // see RpxCamera: survive being unplugged
                 port = p;
                 PortName = name;
                 LastError = "";
@@ -111,7 +130,15 @@ namespace PrismHud.WinTAK.Services
             try
             {
                 p.DataReceived -= OnData;
+                GC.ReRegisterForFinalize(p.BaseStream);
+            }
+            catch (Exception)
+            {
+            }
+            try
+            {
                 p.Close();
+                p.Dispose();
             }
             catch (Exception)
             {
