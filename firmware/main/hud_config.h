@@ -50,6 +50,7 @@ typedef struct {
     int brightness;
     bool mirror_x, mirror_y;
     int mode;
+    uint32_t layers;                    /* HUD_L_* mask (what NORMAL mode draws) */
 } hud_config_t;
 
 extern hud_config_t g_cfg;

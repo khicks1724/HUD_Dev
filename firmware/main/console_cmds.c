@@ -155,6 +155,70 @@ static int cmd_trk(int argc, char **argv)
     return 0;
 }
 
+/* show [<mask>|full|clean|combat|nav|+name|-name]: what the HUD draws */
+static const struct {
+    const char *name;
+    uint32_t bit;
+} k_layers[] = {
+    {"tape", HUD_L_TAPE},   {"horizon", HUD_L_HORIZON}, {"reticle", HUD_L_RETICLE}, {"radar", HUD_L_RADAR},
+    {"status", HUD_L_STATUS}, {"names", HUD_L_NAMES},   {"ranges", HUD_L_RANGES},   {"info", HUD_L_INFO},
+    {"edge", HUD_L_EDGE},   {"enemyonly", HUD_L_ENEMY_ONLY},
+};
+
+static int cmd_show(int argc, char **argv)
+{
+    static const char *layouts[] = {"full", "clean", "combat", "nav"};
+    for (int i = 1; i < argc; i++) {
+        const char *a = argv[i];
+        bool done = false;
+        for (int l = 0; l < HUD_LAYOUT_COUNT && !done; l++) {
+            if (strcmp(a, layouts[l]) == 0) {
+                g_cfg.layers = hud_layout_mask((hud_layout_t)l);
+                done = true;
+            }
+        }
+        if (!done && (a[0] == '+' || a[0] == '-')) {
+            for (size_t k = 0; k < sizeof(k_layers) / sizeof(k_layers[0]); k++) {
+                if (strcmp(a + 1, k_layers[k].name) == 0) {
+                    g_cfg.layers = a[0] == '+' ? (g_cfg.layers | k_layers[k].bit) : (g_cfg.layers & ~k_layers[k].bit);
+                    done = true;
+                }
+            }
+        }
+        if (!done) {
+            char *end;
+            const unsigned long v = strtoul(a, &end, 0);
+            if (*end) {
+                printf("show: unknown '%s'\n", a);
+                return 1;
+            }
+            g_cfg.layers = (uint32_t)v & HUD_L_ALL;
+        }
+    }
+    printf("layers=%lu:", (unsigned long)g_cfg.layers);
+    for (size_t k = 0; k < sizeof(k_layers) / sizeof(k_layers[0]); k++) {
+        if (g_cfg.layers & k_layers[k].bit) printf(" %s", k_layers[k].name);
+    }
+    printf("\n");
+    return 0;
+}
+
+/* range <show_m> [radar_m]: hide units beyond show_m; radar scale */
+static int cmd_range(int argc, char **argv)
+{
+    if (argc >= 2) {
+        const float m = (float)atof(argv[1]);
+        if (m < 100.0f) {
+            printf("range: too small\n");
+            return 1;
+        }
+        g_cfg.max_range_m = m;
+        g_cfg.radar_range_m = argc >= 3 ? (float)atof(argv[2]) : m / 4.0f;
+    }
+    printf("range=%.0f radar=%.0f\n", g_cfg.max_range_m, g_cfg.radar_range_m);
+    return 0;
+}
+
 static int cmd_fix(int argc, char **argv)
 {
     if (argc < 3) {
@@ -368,6 +432,8 @@ void console_start(void)
         {.command = "cal", .help = "cal level|nose|trim|reset: IMU mount calibration", .func = cmd_cal},
         {.command = "imu", .help = "raw sensor values", .func = cmd_imu},
         {.command = "mode", .help = "mode <0-3>: display mode", .func = cmd_mode},
+        {.command = "show", .help = "show [full|clean|combat|nav|<mask>|+layer|-layer]: what the HUD draws", .func = cmd_show},
+        {.command = "range", .help = "range <show_m> [radar_m]: hide units beyond; radar scale", .func = cmd_range},
         {.command = "thermal", .help = "cycle thermal underlay", .func = cmd_thermal},
         {.command = "thal", .help = "thal <dx> <dy> [roll]: thermal camera alignment", .func = cmd_thal},
         {.command = "mirror", .help = "mirror <x> <y>: LCD mirroring for the prism", .func = cmd_mirror},

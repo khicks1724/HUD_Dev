@@ -127,6 +127,7 @@ static void render_task(void *arg)
         sc.max_range_m = g_cfg.max_range_m;
         sc.radar_range_m = g_cfg.radar_range_m;
         sc.max_labels = 16;
+        sc.layers = g_cfg.layers;
         sc.hdg_source = imu_heading_source_name();
 
         app_lock();

@@ -74,6 +74,7 @@ void hud_config_defaults(hud_config_t *c)
     memcpy(c->mount, mount0, sizeof(mount0));
     c->max_range_m = 5000.0f;
     c->radar_range_m = 2000.0f;
+    c->layers = 0x1FF; /* HUD_L_DEFAULT */
     c->brightness = 80;
     c->mirror_x = K_MIRROR_X;
     c->mirror_y = K_MIRROR_Y;
@@ -144,6 +145,7 @@ esp_err_t hud_config_load(void)
     if (nvs_get_u16(h, "udp_port", &u16) == ESP_OK) c->udp_port = u16;
     if (nvs_get_i32(h, "bright", &i32) == ESP_OK) c->brightness = (int)i32;
     if (nvs_get_i32(h, "mode", &i32) == ESP_OK) c->mode = (int)i32;
+    if (nvs_get_i32(h, "layers", &i32) == ESP_OK) c->layers = (uint32_t)i32;
     get_u8_bool(h, "send_sa", &c->send_sa);
     get_u8_bool(h, "fake", &c->fake_targets);
     get_u8_bool(h, "mesh", &c->mesh_sa);
@@ -191,6 +193,7 @@ esp_err_t hud_config_save(void)
     nvs_set_u16(h, "udp_port", c->udp_port);
     nvs_set_i32(h, "bright", c->brightness);
     nvs_set_i32(h, "mode", c->mode);
+    nvs_set_i32(h, "layers", (int32_t)c->layers);
     nvs_set_u8(h, "send_sa", c->send_sa);
     nvs_set_u8(h, "fake", c->fake_targets);
     nvs_set_u8(h, "mesh", c->mesh_sa);

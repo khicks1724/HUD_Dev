@@ -13,6 +13,17 @@
 #define TAPE_H 22
 #define MAX_SORT 64
 
+uint32_t hud_layout_mask(hud_layout_t layout)
+{
+    switch (layout) {
+    case HUD_LAYOUT_CLEAN: return HUD_L_TAPE | HUD_L_RETICLE | HUD_L_NAMES | HUD_L_INFO | HUD_L_EDGE;
+    case HUD_LAYOUT_COMBAT: return HUD_L_RETICLE | HUD_L_NAMES | HUD_L_RANGES | HUD_L_INFO | HUD_L_EDGE | HUD_L_ENEMY_ONLY;
+    case HUD_LAYOUT_NAV: return HUD_L_TAPE | HUD_L_HORIZON | HUD_L_RETICLE | HUD_L_RADAR | HUD_L_STATUS | HUD_L_EDGE;
+    case HUD_LAYOUT_FULL:
+    default: return HUD_L_DEFAULT;
+    }
+}
+
 void hud_format_range(float m, char *out, int cap)
 {
     if (m < 1000.0f) {
@@ -245,7 +256,7 @@ void hud_label_text(const char *cs, char *out, int cap)
  * symbol, skipping any that would overlap a label already placed, the
  * heading tape or the status/radar corners. So every visible unit gets its
  * name when there is room, not just the nearest few. */
-static int draw_targets(gfx_t *g, const hud_scene_t *s, const hud_rtarget_t *t, int n, bool labels, bool corners)
+static int draw_targets(gfx_t *g, const hud_scene_t *s, const hud_rtarget_t *t, int n, uint32_t L)
 {
     sort_item_t order[MAX_SORT];
     int m = 0;
@@ -275,7 +286,7 @@ static int draw_targets(gfx_t *g, const hud_scene_t *s, const hud_rtarget_t *t, 
             order[k].x = x;
             order[k].y = y;
             shown++;
-        } else {
+        } else if (L & HUD_L_EDGE) {
             /* edge cue: small triangle pointing outward (range is on the radar) */
             const float a = p.edge_angle_deg * DEG2RADF;
             const float ux = cosf(a), uy = -sinf(a);
@@ -285,16 +296,15 @@ static int draw_targets(gfx_t *g, const hud_scene_t *s, const hud_rtarget_t *t, 
                          ex - (int)(-uy * 5), ey - (int)(ux * 5), c);
         }
     }
-    if (!labels) return shown;
+    const bool want_name = L & HUD_L_NAMES, want_rng = L & HUD_L_RANGES;
+    if (!want_name && !want_rng) return shown;
 
     box_t used[MAX_SORT + 4];
     int nu = 0;
     used[nu++] = (box_t){0, 0, g->w, TAPE_H + 2};
-    if (corners) {
-        used[nu++] = (box_t){0, g->h - 32, 64, g->h};           /* status text */
-        used[nu++] = (box_t){g->w - 68, g->h - 68, g->w, g->h}; /* mini radar */
-        used[nu++] = (box_t){g->w / 2 - 60, TAPE_H + 2, g->w / 2 + 60, TAPE_H + 15}; /* crosshair info */
-    }
+    if (L & HUD_L_STATUS) used[nu++] = (box_t){0, g->h - 32, 64, g->h};
+    if (L & HUD_L_RADAR) used[nu++] = (box_t){g->w - 68, g->h - 68, g->w, g->h};
+    if (L & HUD_L_INFO) used[nu++] = (box_t){g->w / 2 - 60, TAPE_H + 2, g->w / 2 + 60, TAPE_H + 15};
     int placed = 0;
     for (int pass = 0; pass < 3; pass++) {
         for (int k = m - 1; k >= 0; k--) {
@@ -302,11 +312,14 @@ static int draw_targets(gfx_t *g, const hud_scene_t *s, const hud_rtarget_t *t, 
             const hud_rtarget_t *tg = &t[order[k].idx];
             const int rank = tg->selected ? 0 : tg->affil == HUD_AFFIL_HOSTILE ? 1 : 2;
             if (rank != pass) continue;
+            if ((L & HUD_L_ENEMY_ONLY) && rank == 2) continue;
             const uint16_t c = tg->age_s > 30.0f ? GFX_ACCENT_DIM : affil_color(tg->affil);
             char name[HUD_LABEL_CHARS + 2], rng[12];
-            hud_label_text(tg->callsign, name, sizeof(name));
-            hud_format_range(order[k].range, rng, sizeof(rng));
-            const int lines = name[0] ? 2 : 1;
+            name[0] = rng[0] = '\0';
+            if (want_name) hud_label_text(tg->callsign, name, sizeof(name));
+            if (want_rng) hud_format_range(order[k].range, rng, sizeof(rng));
+            if (!name[0] && !rng[0]) continue;
+            const int lines = (name[0] && rng[0]) ? 2 : 1;
             int w = gfx_text_width(rng, 1);
             if (name[0] && gfx_text_width(name, 1) > w) w = gfx_text_width(name, 1);
             const int y = order[k].y, h = lines * 9;
@@ -325,7 +338,7 @@ static int draw_targets(gfx_t *g, const hud_scene_t *s, const hud_rtarget_t *t, 
             used[nu++] = *b;
             placed++;
             if (name[0]) gfx_text_c(g, x, b->y0 + 1, name, c, 1);
-            gfx_text_c(g, x, b->y0 + 1 + (lines - 1) * 9, rng, c, 1);
+            if (rng[0]) gfx_text_c(g, x, b->y0 + 1 + (lines - 1) * 9, rng, c, 1);
         }
     }
     return shown;
@@ -333,7 +346,7 @@ static int draw_targets(gfx_t *g, const hud_scene_t *s, const hud_rtarget_t *t, 
 
 /* One line under the heading tape for the unit in the crosshair:
  * "L WEPS  1.2km  277  +2" (name, range, true bearing, elevation). */
-static void draw_selected_info(gfx_t *g, const hud_rtarget_t *t, int n)
+static void draw_selected_info(gfx_t *g, int y, const hud_rtarget_t *t, int n)
 {
     for (int i = 0; i < n; i++) {
         if (!t[i].selected) continue;
@@ -348,7 +361,6 @@ static void draw_selected_info(gfx_t *g, const hud_rtarget_t *t, int n)
         snprintf(buf, sizeof(buf), "%s%s%s  %03d  %+d", name, name[0] ? "  " : "", rng,
                  ((int)(brg + 0.5f)) % 360, (int)lroundf(el));
         const int w = gfx_text_width(buf, 1);
-        const int y = TAPE_H + 5;
         gfx_fill_rect(g, (g->w - w) / 2 - 3, y - 2, w + 6, 11, GFX_BLACK);
         gfx_text_c(g, g->w / 2, y, buf, GFX_WHITE, 1);
         return;
@@ -437,7 +449,7 @@ void hud_render(gfx_t *g, const hud_scene_t *s, const hud_rtarget_t *t, int n)
         return;
     case HUD_MODE_MINIMAL: {
         draw_boresight(g, s);
-        const int shown = draw_targets(g, s, t, n, true, false);
+        const int shown = draw_targets(g, s, t, n, HUD_L_NAMES | HUD_L_RANGES | HUD_L_EDGE);
         (void)shown;
         return;
     }
@@ -446,13 +458,14 @@ void hud_render(gfx_t *g, const hud_scene_t *s, const hud_rtarget_t *t, int n)
         break;
     }
 
-    draw_horizon(g, s, e.heading_deg);
-    draw_heading_tape(g, s, e.heading_deg);
-    draw_boresight(g, s);
-    const int shown = draw_targets(g, s, t, n, true, true);
-    draw_selected_info(g, t, n);
-    draw_radar(g, s, t, n, e.heading_deg);
-    draw_status_bar(g, s, shown, n);
+    const uint32_t L = s->layers ? s->layers : HUD_L_DEFAULT;
+    if (L & HUD_L_HORIZON) draw_horizon(g, s, e.heading_deg);
+    if (L & HUD_L_TAPE) draw_heading_tape(g, s, e.heading_deg);
+    if (L & HUD_L_RETICLE) draw_boresight(g, s);
+    const int shown = draw_targets(g, s, t, n, L);
+    if (L & HUD_L_INFO) draw_selected_info(g, (L & HUD_L_TAPE) ? TAPE_H + 5 : 4, t, n);
+    if (L & HUD_L_RADAR) draw_radar(g, s, t, n, e.heading_deg);
+    if (L & HUD_L_STATUS) draw_status_bar(g, s, shown, n);
     if (!s->own_pos_valid) {
         gfx_text_c(g, g->w / 2, g->h / 2 + 30, "NO OWN POSITION", GFX_RED, 1);
     }

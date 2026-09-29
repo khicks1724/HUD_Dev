@@ -144,5 +144,14 @@ int main(void)
     s.max_labels = 16;
     hud_render(&g, &s, tc, nc);
     write_ppm("preview_crowd_usb.ppm", &g, 2);
+
+    static const char *names[] = {"full", "clean", "combat", "nav"};
+    for (int l = 0; l < HUD_LAYOUT_COUNT; l++) {
+        char path[48];
+        s.layers = hud_layout_mask((hud_layout_t)l);
+        hud_render(&g, &s, tc, nc);
+        snprintf(path, sizeof(path), "preview_layout_%s.ppm", names[l]);
+        write_ppm(path, &g, 2);
+    }
     return 0;
 }

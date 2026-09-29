@@ -209,6 +209,15 @@ final class PrismViews {
             }
         }
 
+        /** No option highlighted (e.g. a custom mix of layers). */
+        void clear() {
+            selected = -1;
+            for (TextView v : items) {
+                v.setBackground(null);
+                v.setTextColor(PrismTheme.MUTED);
+            }
+        }
+
         void select(int idx) {
             if (idx == selected || idx < 0 || idx >= items.length) return;
             selected = idx;
@@ -217,6 +226,33 @@ final class PrismViews {
                 items[i].setBackground(on ? t.box(Color.rgb(236, 236, 236), 0, 3) : null);
                 items[i].setTextColor(on ? Color.rgb(9, 9, 9) : PrismTheme.MUTED);
             }
+        }
+    }
+
+    /** On/off toggle: white fill when on, outline when off. */
+    static final class Chip extends TextView {
+        private final PrismTheme t;
+
+        Chip(PrismTheme t, String label) {
+            super(t.ctx);
+            this.t = t;
+            setText(label.toUpperCase());
+            setTypeface(t.cond);
+            setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11.5f);
+            setLetterSpacing(0.08f);
+            setIncludeFontPadding(false);
+            setSingleLine(true);
+            setEllipsize(android.text.TextUtils.TruncateAt.END);
+            setGravity(Gravity.CENTER);
+            setPadding(t.dp(6), t.dp(9), t.dp(6), t.dp(9));
+            setClickable(true);
+            setOn(false);
+        }
+
+        void setOn(boolean on) {
+            // outline, not a fill: a grid of solid white chips is too heavy
+            setBackground(on ? t.box(PrismTheme.PANEL_HI, Color.rgb(200, 200, 200), 4) : t.box(PrismTheme.PANEL, PrismTheme.LINE, 4));
+            setTextColor(on ? PrismTheme.TEXT : Color.rgb(90, 94, 101));
         }
     }
 

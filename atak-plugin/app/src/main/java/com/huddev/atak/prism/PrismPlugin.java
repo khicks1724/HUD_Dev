@@ -46,6 +46,13 @@ public final class PrismPlugin implements IPlugin {
     private static final String[] THERMAL = {"Off", "Full", "Hot"};
     private static final String[] RANGES = {"5 km", "10 km", "20 km", "50 km"};
     private static final double[] RANGE_M = {5000, 10000, 20000, 50000};
+    // HUD layers (firmware hud_render.h HUD_L_*) and the four layout presets
+    private static final String[] LAYOUTS = {"Full", "Clean", "Combat", "Nav"};
+    private static final String[] LAYOUT_CMD = {"full", "clean", "combat", "nav"};
+    private static final int[] LAYOUT_MASK = {0x1FF, 0x1A5, 0x3E4, 0x11F};
+    private static final String[] LAYER_NAMES = {"Heading tape", "Horizon", "Reticle", "Radar", "Status text",
+            "Names", "Ranges", "Target info", "Edge arrows", "Enemy labels only"};
+    private static final int LAYER_COUNT = 10;
 
     private final Context pluginContext;
     private final IHostUIService hostUi;
@@ -63,12 +70,15 @@ public final class PrismPlugin implements IPlugin {
     private PrismViews.Pill pill;
     private PrismViews.HeadingTape tape;
     private TextView vPitch, vRoll, vSrc, vFix, vSent, vHudTracks, vLink, vNote;
-    private PrismViews.Segmented segMode, segThermal, segRange;
+    private PrismViews.Segmented segMode, segThermal, segRange, segLayout;
+    private final PrismViews.Chip[] chips = new PrismViews.Chip[LAYER_COUNT];
+    private int shownLayers = 0x1FF;   // what the chips show (HUD state, or our last change)
+    private long layersSentMs;
 
     // state (worker thread writes, UI reads)
     private volatile String linkState = "starting";
     private volatile String fixText = "—";
-    private volatile int tracksSent, hudTracks = -1, hudLink = -1, hudMode = -1, hudThermal = -1;
+    private volatile int tracksSent, hudTracks = -1, hudLink = -1, hudMode = -1, hudThermal = -1, hudLayers = -1;
     private volatile float hudH = Float.NaN, hudP, hudR;
     private volatile String hudSrc = "—";
     private volatile long lastStateMs;
@@ -215,6 +225,7 @@ public final class PrismPlugin implements IPlugin {
             hudLink = o.optInt("link", -1);
             hudMode = o.optInt("mode", -1);
             hudThermal = o.optInt("thermal", -1);
+            hudLayers = o.optInt("layers", -1);
             lastStateMs = SystemClock.elapsedRealtime();
             refresh();
         } catch (Exception ignored) {
@@ -248,6 +259,8 @@ public final class PrismPlugin implements IPlugin {
         vLink.setText(hudLink == 2 ? "WI-FI + TAK" : hudLink == 1 ? "WI-FI" : hudLink == 0 ? "USB" : "—");
         if (live && hudMode >= 0) segMode.select(hudMode);
         if (live && hudThermal >= 0) segThermal.select(hudThermal);
+        // follow the HUD, but not in the moment right after our own tap
+        if (live && hudLayers >= 0 && SystemClock.elapsedRealtime() - layersSentMs > 2500) showLayers(hudLayers);
         vNote.setText(note);
     }
 
@@ -332,7 +345,11 @@ public final class PrismPlugin implements IPlugin {
         f2.addView(t.tile("HUD link", vLink), t.weight(1, 3));
         col.addView(f2);
         col.addView(t.space(8));
-        segRange = new PrismViews.Segmented(t, RANGES, i -> HudFeeder.maxRangeM = RANGE_M[i]);
+        segRange = new PrismViews.Segmented(t, RANGES, i -> {
+            HudFeeder.maxRangeM = RANGE_M[i];
+            send(String.format(Locale.US, "range %.0f", RANGE_M[i])); // HUD hides units beyond this too
+            send("save");
+        });
         segRange.select(2);
         col.addView(segRange);
         col.addView(t.space(18));
@@ -343,6 +360,30 @@ public final class PrismPlugin implements IPlugin {
         segMode = new PrismViews.Segmented(t, MODES, i -> send("mode " + i));
         col.addView(segMode);
         col.addView(t.space(8));
+        col.addView(t.label("Layout"));
+        col.addView(t.space(6));
+        segLayout = new PrismViews.Segmented(t, LAYOUTS, i -> setLayers(LAYOUT_MASK[i], "show " + LAYOUT_CMD[i]));
+        col.addView(segLayout);
+        col.addView(t.space(8));
+        col.addView(t.label("On screen"));
+        col.addView(t.space(6));
+        LinearLayout chipRow = null;
+        for (int i = 0; i < LAYER_COUNT; i++) {
+            if (i % 2 == 0) {
+                chipRow = row();
+                col.addView(chipRow);
+                if (i > 0) ((LinearLayout.LayoutParams) chipRow.getLayoutParams()).topMargin = t.dp(6);
+            }
+            final int bit = 1 << i;
+            chips[i] = new PrismViews.Chip(t, LAYER_NAMES[i]);
+            chips[i].setOnClickListener(v -> {
+                int m = shownLayers ^ bit;
+                setLayers(m, "show " + m);
+            });
+            chipRow.addView(chips[i], t.weight(1, 3));
+        }
+        showLayers(shownLayers);
+        col.addView(t.space(12));
         col.addView(t.label("Thermal"));
         col.addView(t.space(6));
         segThermal = new PrismViews.Segmented(t, THERMAL, i -> send("thermal " + i));
@@ -417,6 +458,25 @@ public final class PrismPlugin implements IPlugin {
         help.setLineSpacing(0, 1.2f);
         col.addView(help);
         return scroll;
+    }
+
+    private void setLayers(int mask, String cmd) {
+        layersSentMs = SystemClock.elapsedRealtime();
+        send(cmd);
+        send("save");
+        showLayers(mask);
+    }
+
+    private void showLayers(int mask) {
+        shownLayers = mask;
+        for (int i = 0; i < LAYER_COUNT; i++) {
+            if (chips[i] != null) chips[i].setOn((mask & (1 << i)) != 0);
+        }
+        if (segLayout == null) return;
+        int preset = -1;
+        for (int i = 0; i < LAYOUT_MASK.length; i++) if (LAYOUT_MASK[i] == mask) preset = i;
+        if (preset >= 0) segLayout.select(preset);
+        else segLayout.clear();
     }
 
     private void syncHeading() {
