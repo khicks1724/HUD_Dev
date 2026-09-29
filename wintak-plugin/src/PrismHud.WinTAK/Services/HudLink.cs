@@ -31,11 +31,12 @@ namespace PrismHud.WinTAK.Services
 
         private readonly object writeLock = new object();
         private readonly StringBuilder rx = new StringBuilder();
-        private SerialPort port;
+        private ComPort port;
         private Timer watchdog;
         private volatile bool disposed;
+        private int watching;
 
-        public string PortName { get; private set; }
+        public string PortName => port?.Name;
         public string PreferredPort { get; set; } // null/"Auto" = find by VID/PID
         public bool IsOpen => port != null && port.IsOpen;
         public HudState State { get; private set; } = new HudState();
@@ -52,25 +53,25 @@ namespace PrismHud.WinTAK.Services
 
         private void Watch()
         {
+            if (disposed || Interlocked.Exchange(ref watching, 1) == 1) return;
             try
             {
                 // unplugged (port gone from Windows): drop it so a replug reconnects
-                if (IsOpen && Array.IndexOf(SerialPort.GetPortNames(), PortName) < 0)
-                {
-                    LastError = "HUD unplugged";
-                    Close();
-                }
-                EnsureOpen();
+                if (IsOpen && Array.IndexOf(SerialPort.GetPortNames(), PortName) < 0) Drop("HUD unplugged");
+                if (!IsOpen) TryOpen();
             }
             catch (Exception e)
             {
                 LastError = e.Message;
             }
+            finally
+            {
+                Interlocked.Exchange(ref watching, 0);
+            }
         }
 
-        private void EnsureOpen()
+        private void TryOpen()
         {
-            if (disposed || IsOpen) return;
             var name = PreferredPort;
             if (string.IsNullOrEmpty(name) || name == "Auto")
             {
@@ -86,23 +87,10 @@ namespace PrismHud.WinTAK.Services
             {
                 // DTR/RTS drive the ESP32's EN/BOOT through the auto-reset
                 // circuit: keep both released so opening the port doesn't reset it.
-                var p = new SerialPort(name, Baud, Parity.None, 8, StopBits.One)
-                {
-                    DtrEnable = false,
-                    RtsEnable = false,
-                    Handshake = Handshake.None,
-                    WriteTimeout = 1000,
-                    ReadTimeout = 500,
-                    WriteBufferSize = 256 * 1024,
-                    ReadBufferSize = 64 * 1024,
-                    Encoding = Encoding.ASCII,
-                };
-                p.DataReceived += OnData;
-                p.Open();
-                GC.SuppressFinalize(p.BaseStream); // see RpxCamera: survive being unplugged
+                var p = ComPort.Open(name, Baud, false, false);
                 port = p;
-                PortName = name;
                 LastError = "";
+                new Thread(() => ReadLoop(p)) { IsBackground = true, Name = "PRISM HUD reader" }.Start();
                 SendLine("");
                 SendLine("fake off");
                 SendLine("stream on 2");
@@ -111,58 +99,54 @@ namespace PrismHud.WinTAK.Services
             catch (Exception e)
             {
                 LastError = name + ": " + e.Message;
-                Close();
             }
         }
 
         public void Reconnect()
         {
-            Close();
-            ThreadPool.QueueUserWorkItem(_ => EnsureOpen());
+            Drop("");
         }
 
-        private void Close()
+        private void Drop(string why)
         {
             var p = port;
             port = null;
-            PortName = null;
-            if (p == null) return;
-            try
-            {
-                p.DataReceived -= OnData;
-                GC.ReRegisterForFinalize(p.BaseStream);
-            }
-            catch (Exception)
-            {
-            }
-            try
-            {
-                p.Close();
-                p.Dispose();
-            }
-            catch (Exception)
-            {
-            }
+            if (!string.IsNullOrEmpty(why)) LastError = why;
+            p?.Dispose();
         }
 
-        private void OnData(object sender, SerialDataReceivedEventArgs e)
+        private void ReadLoop(ComPort p)
         {
-            try
+            var buf = new byte[8192];
+            while (!disposed && port == p)
             {
-                var text = ((SerialPort)sender).ReadExisting();
-                rx.Append(text);
-                int nl;
-                while ((nl = IndexOf(rx, '\n')) >= 0)
+                int n;
+                try
                 {
-                    var line = rx.ToString(0, nl).TrimEnd('\r');
-                    rx.Remove(0, nl + 1);
-                    var k = line.IndexOf("@HUD ", StringComparison.Ordinal);
-                    if (k >= 0) ParseState(line.Substring(k + 5));
+                    n = p.Read(buf, 0, buf.Length);
                 }
-                if (rx.Length > 16384) rx.Clear();
-            }
-            catch (Exception)
-            {
+                catch (Exception e)
+                {
+                    if (port == p) Drop("HUD: " + e.Message);
+                    return;
+                }
+                if (n <= 0) continue;
+                try
+                {
+                    rx.Append(Encoding.ASCII.GetString(buf, 0, n));
+                    int nl;
+                    while ((nl = IndexOf(rx, '\n')) >= 0)
+                    {
+                        var line = rx.ToString(0, nl).TrimEnd('\r');
+                        rx.Remove(0, nl + 1);
+                        var k = line.IndexOf("@HUD ", StringComparison.Ordinal);
+                        if (k >= 0) ParseState(line.Substring(k + 5));
+                    }
+                    if (rx.Length > 16384) rx.Clear();
+                }
+                catch (Exception)
+                {
+                }
             }
         }
 
@@ -266,8 +250,7 @@ namespace PrismHud.WinTAK.Services
                 }
                 catch (Exception e)
                 {
-                    LastError = e.Message;
-                    Close();
+                    Drop(e.Message);
                     return false;
                 }
             }
@@ -282,7 +265,7 @@ namespace PrismHud.WinTAK.Services
                 SendLine("stream off");
                 SendThermalOff();
             }
-            Close();
+            Drop("");
         }
     }
 }

@@ -458,7 +458,7 @@ namespace PrismHud.WinTAK.Views
                     th.CameraHfovDeg, th.EffectiveHfov, cam.ZoomFactor, th.SentFps,
                     live && st.ThermalSource == "usb" ? " · HUD showing it" : live ? " · HUD not showing it yet" : "",
                     float.IsNaN(cam.Temperature) ? "" : string.Format(CultureInfo.InvariantCulture, " · core {0:0}°C", cam.Temperature))
-                : cam.IsOpen ? "RPX camera on " + cam.PortName + ", starting its stream…" : cam.LastError;
+                : cam.IsOpen ? cam.Status : cam.LastError;
 
             if (live)
             {
