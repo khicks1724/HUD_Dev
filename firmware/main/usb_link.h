@@ -14,6 +14,7 @@
  *             hfov_cdeg = camera horizontal FOV in 1/100 deg (e.g. 3200)
  *     type 2: thermal palette, 256 x RGB888 (768 bytes), index = intensity
  *     type 3: thermal source off (drop the USB frame, go back to greyscale)
+ *     type 4: TAK map picture, a baseline JPEG up to 320x320 (map_view.h)
  *   0xA5 never starts a text line, so a terminal and the plugin can share it.
  */
 #include <stdint.h>

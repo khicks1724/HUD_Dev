@@ -22,6 +22,7 @@ typedef enum {
     HUD_MODE_MINIMAL,    /* targets only, for bright backgrounds / low clutter */
     HUD_MODE_CALIB,      /* boresight crosshair + angular grid for FOV calibration */
     HUD_MODE_STATUS,     /* text status page */
+    HUD_MODE_MAP,        /* the TAK map picture from the host plugin, full screen */
     HUD_MODE_COUNT
 } hud_mode_t;
 
@@ -38,8 +39,9 @@ enum {
     HUD_L_INFO = 1 << 7,       /* crosshair target readout */
     HUD_L_EDGE = 1 << 8,       /* off-screen arrows */
     HUD_L_ENEMY_ONLY = 1 << 9, /* names/ranges only on hostiles (+ crosshair target) */
+    HUD_L_MAPINSET = 1 << 10,  /* small TAK map in place of the radar (when the host sends one) */
     HUD_L_DEFAULT = 0x1FF,
-    HUD_L_ALL = 0x3FF,
+    HUD_L_ALL = 0x7FF,
 };
 
 typedef enum {
@@ -103,6 +105,8 @@ typedef struct {
     uint32_t layers;           /* HUD_L_* mask, 0 = HUD_L_DEFAULT */
     hud_thermal_mode_t thermal_mode;
     const hud_thermal_t *thermal; /* NULL when no camera frame is available */
+    const uint16_t *map_px;    /* TAK map picture from the host (GFX order) or NULL */
+    int map_w, map_h;
     /* status page text */
     const char *status_lines[10];
     int status_count;

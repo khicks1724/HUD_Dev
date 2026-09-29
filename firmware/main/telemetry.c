@@ -14,6 +14,7 @@
 #include "hud_config.h"
 #include "imu_task.h"
 #include "render_task.h"
+#include "map_view.h"
 #include "thermal.h"
 
 static const char *TAG = "telem";
@@ -71,12 +72,12 @@ int telemetry_state_json(char *buf, size_t cap, int max_targets)
     jb_printf(&b,
               "{\"t\":%lld,\"att\":{\"h\":%.2f,\"p\":%.2f,\"r\":%.2f,\"q\":[%.5f,%.5f,%.5f,%.5f],\"src\":\"%s\"},"
               "\"own\":{\"ok\":%d,\"src\":\"%s\",\"lat\":%.7f,\"lon\":%.7f,\"hae\":%.1f},"
-              "\"link\":%d,\"mode\":%d,\"thermal\":%d,\"thsrc\":\"%s\",\"thfps\":%.1f,\"layers\":%lu,\"range\":%.0f,\"fov\":[%.1f,%.1f],\"bore\":[%.1f,%.1f],"
+              "\"link\":%d,\"mode\":%d,\"thermal\":%d,\"thsrc\":\"%s\",\"thfps\":%.1f,\"mapfps\":%.1f,\"layers\":%lu,\"range\":%.0f,\"fov\":[%.1f,%.1f],\"bore\":[%.1f,%.1f],"
               "\"ip\":\"%s\",\"tracks\":%d,\"targets\":[",
               (long long)app_mono_ms(), e.heading_deg, e.pitch_deg, e.roll_deg, q.w, q.x, q.y, q.z,
               imu_heading_source_name(), own_ok, app_pos_src_name(g_app.pos_src), own.lat_deg, own.lon_deg,
               own.hae_m, g_app.link_state, (int)g_app.mode, (int)g_app.thermal_mode, thermal_source_name(),
-              (double)thermal_usb_fps(), (unsigned long)g_cfg.layers,
+              (double)thermal_usb_fps(), (double)map_view_fps(), (unsigned long)g_cfg.layers,
               g_cfg.max_range_m, g_cfg.hfov_deg, g_cfg.vfov_deg,
               g_cfg.bore_dx_px, g_cfg.bore_dy_px, g_app.ip, g_app.targets->count);
     int n = 0;

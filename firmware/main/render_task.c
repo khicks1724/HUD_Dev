@@ -18,6 +18,7 @@
 #include "imu_task.h"
 #include "lcd_st7789.h"
 #include "sdkconfig.h"
+#include "map_view.h"
 #include "thermal.h"
 
 static const char *TAG = "render";
@@ -160,6 +161,7 @@ static void render_task(void *arg)
 
         select_nearest(sc.q, n);
         sc.thermal = thermal_latest();
+        sc.map_px = map_view_latest(&sc.map_w, &sc.map_h);
         hud_render(&g, &sc, s_rt, n);
         lcd_push_frame(s_fb);
 

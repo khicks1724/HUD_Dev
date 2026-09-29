@@ -367,6 +367,46 @@ static void draw_selected_info(gfx_t *g, int y, const hud_rtarget_t *t, int n)
     }
 }
 
+/* Nearest-neighbour blit of the map picture into a box, keeping its aspect
+ * (centre crop). */
+static void draw_map(gfx_t *g, const hud_scene_t *s, int x0, int y0, int w, int h)
+{
+    const int mw = s->map_w, mh = s->map_h;
+    if (!s->map_px || mw <= 0 || mh <= 0) return;
+    /* scale so the picture covers the box, then crop the middle */
+    const float k = (float)mw / w < (float)mh / h ? (float)mw / w : (float)mh / h;
+    const float ox = (mw - w * k) * 0.5f, oy = (mh - h * k) * 0.5f;
+    for (int y = 0; y < h; y++) {
+        const int py = y0 + y;
+        if (py < 0 || py >= g->h) continue;
+        const int sy = (int)(oy + y * k);
+        const uint16_t *src = s->map_px + (size_t)sy * mw;
+        uint16_t *dst = g->px + (size_t)py * g->w;
+        for (int x = 0; x < w; x++) {
+            const int px = x0 + x;
+            if (px < 0 || px >= g->w) continue;
+            dst[px] = src[(int)(ox + x * k)];
+        }
+    }
+}
+
+static void draw_map_mode(gfx_t *g, const hud_scene_t *s, float heading)
+{
+    if (!s->map_px) {
+        gfx_text_c(g, g->w / 2, g->h / 2 - 12, "NO MAP", GFX_AMBER, 2);
+        gfx_text_c(g, g->w / 2, g->h / 2 + 10, "OPEN PRISM IN WINTAK/ATAK", GFX_ACCENT_DIM, 1);
+        return;
+    }
+    draw_map(g, s, 0, 0, g->w, g->h);
+    /* heading readout on a dark tab so it reads over imagery */
+    char buf[8];
+    snprintf(buf, sizeof(buf), "%03d", ((int)(heading + 0.5f)) % 360);
+    const int cx = g->w / 2;
+    gfx_fill_rect(g, cx - 16, 2, 33, 14, GFX_BLACK);
+    gfx_rect(g, cx - 16, 2, 33, 14, GFX_ACCENT);
+    gfx_text_c(g, cx + 1, 6, buf, GFX_WHITE, 1);
+}
+
 static void draw_calib(gfx_t *g, const hud_scene_t *s)
 {
     const hud_proj_cfg_t *p = &s->proj;
@@ -451,6 +491,9 @@ void hud_render(gfx_t *g, const hud_scene_t *s, const hud_rtarget_t *t, int n)
     case HUD_MODE_STATUS:
         draw_status(g, s);
         return;
+    case HUD_MODE_MAP:
+        draw_map_mode(g, s, e.heading_deg);
+        return;
     case HUD_MODE_MINIMAL: {
         draw_boresight(g, s);
         const int shown = draw_targets(g, s, t, n, HUD_L_NAMES | HUD_L_RANGES | HUD_L_EDGE);
@@ -468,7 +511,14 @@ void hud_render(gfx_t *g, const hud_scene_t *s, const hud_rtarget_t *t, int n)
     if (L & HUD_L_RETICLE) draw_boresight(g, s);
     const int shown = draw_targets(g, s, t, n, L);
     if (L & HUD_L_INFO) draw_selected_info(g, (L & HUD_L_TAPE) ? TAPE_H + 5 : 4, t, n);
-    if (L & HUD_L_RADAR) draw_radar(g, s, t, n, e.heading_deg);
+    if ((L & HUD_L_MAPINSET) && s->map_px) {
+        /* map in the radar's corner, framed */
+        const int sz = 66, x0 = g->w - sz - 2, y0 = g->h - sz - 2;
+        draw_map(g, s, x0, y0, sz, sz);
+        gfx_rect(g, x0 - 1, y0 - 1, sz + 2, sz + 2, GFX_ACCENT);
+    } else if (L & HUD_L_RADAR) {
+        draw_radar(g, s, t, n, e.heading_deg);
+    }
     if (L & HUD_L_STATUS) draw_status_bar(g, s, shown, n);
     if (!s->own_pos_valid) {
         gfx_text_c(g, g->w / 2, g->h / 2 + 30, "NO OWN POSITION", GFX_RED, 1);

@@ -50,7 +50,9 @@ namespace PrismHud.WinTAK.Services
         private void OnFrame(byte[] f)
         {
             var now = DateTime.UtcNow;
-            var wantSend = SendToHud && hud.IsOpen && (now - lastSent).TotalSeconds >= 1.0 / TargetFps;
+            // the HUD's Map mode shows the map, not thermal: leave the link to the map
+            var wantSend = SendToHud && hud.IsOpen && hud.State.Mode != MapCapture.HudModeMap &&
+                           (now - lastSent).TotalSeconds >= 1.0 / TargetFps;
             var wantPreview = (now - lastPreview).TotalMilliseconds >= 100;
             if (!wantSend && !wantPreview) return;
             Downscale(f, small);

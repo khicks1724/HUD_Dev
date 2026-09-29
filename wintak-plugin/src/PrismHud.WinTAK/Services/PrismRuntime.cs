@@ -20,6 +20,7 @@ namespace PrismHud.WinTAK.Services
         public static RpxCamera Camera { get; private set; }
         public static ThermalPipeline Thermal { get; private set; }
         public static TrackFeeder Feeder { get; private set; }
+        public static MapCapture Map { get; private set; }
 
         public static string FixText { get; private set; } = "—";
         public static int TracksSent { get; private set; }
@@ -43,12 +44,18 @@ namespace PrismHud.WinTAK.Services
             Camera.SetZoom(Settings.Zoom);
             Thermal = new ThermalPipeline(Hud, Camera) { CameraHfovDeg = Settings.CameraHfovDeg };
             Feeder = new TrackFeeder(location, renderer, groups) { MaxRangeM = RangesM[Settings.RangeIndex] };
+            Map = new MapCapture(Hud);
+            var app = System.Windows.Application.Current;
+            app?.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                var w = app.MainWindow;
+                if (w != null) Map.SetMainWindow(new System.Windows.Interop.WindowInteropHelper(w).Handle);
+            }), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
             Hud.Connected += OnHudConnected;
             Camera.StreamStarted += OnCameraStreaming;
             Hud.Start();
             Camera.Start();
             timer = new Timer(_ => Loop(), null, 1500, 1000);
-            var app = System.Windows.Application.Current;
             if (app != null) app.Exit += (s, e) => Stop();
             testTimer = new Timer(_ => TestFrame(), null, 1000, 100);
         }
@@ -83,6 +90,7 @@ namespace PrismHud.WinTAK.Services
             {
                 timer?.Dispose();
                 testTimer?.Dispose();
+                Map?.Dispose();
                 timer = testTimer = null;
                 Camera?.Dispose();
                 Hud?.Dispose();

@@ -16,6 +16,7 @@ idf_component_register(
         "hub_link.c"
         "console_cmds.c"
         "usb_link.c"
+        "map_view.c"
     INCLUDE_DIRS "."
     REQUIRES hud_core drivers nvs_flash esp_wifi esp_netif esp_event esp-tls esp_http_server
              console driver esp_timer lwip

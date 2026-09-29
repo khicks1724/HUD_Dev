@@ -40,15 +40,16 @@ namespace PrismHud.WinTAK.Views
         };
         private static readonly FontFamily Font = new FontFamily("Bahnschrift, Segoe UI");
 
-        private static readonly string[] Modes = { "Normal", "Minimal", "Calib", "Status" };
+        private static readonly string[] Modes = { "Normal", "Minimal", "Calib", "Status", "Map" };
         private static readonly string[] Layouts = { "Full", "Clean", "Combat", "Nav" };
         private static readonly string[] LayoutCmd = { "full", "clean", "combat", "nav" };
         private static readonly long[] LayoutMask = { 0x1FF, 0x1A5, 0x3E4, 0x11F };
         private static readonly string[] LayerNames = { "Heading tape", "Horizon", "Reticle", "Radar", "Status text",
-            "Names", "Ranges", "Target info", "Edge arrows", "Enemy labels only" };
+            "Names", "Ranges", "Target info", "Edge arrows", "Enemy labels only", "Map inset" };
         private static readonly string[] ThermalModes = { "Off", "Full", "Hot" };
         private static readonly string[] Ranges = { "5 km", "10 km", "20 km", "50 km" };
         private static readonly string[] Zooms = { "1x", "2x", "4x" };
+        private static readonly double[] MapZooms = { 1, 2, 4 };
         private static readonly string[] Enhances = { "Off", "Auto H", "Auto U" };
         private static readonly int[] EnhanceLevel = { 0, 5, 6 };
 
@@ -67,6 +68,7 @@ namespace PrismHud.WinTAK.Views
         private DateTime layersSentUtc = DateTime.MinValue;
         private ComboBox hudPortBox, camPortBox;
         private TextBox fovBox;
+        private TextBlock vMapInfo;
 
         public PrismView()
         {
@@ -253,6 +255,14 @@ namespace PrismHud.WinTAK.Views
             col.Children.Add(Space(6));
             segMode = new Segmented(Modes, i => Send("mode " + i));
             col.Children.Add(segMode);
+            col.Children.Add(Space(6));
+            var mapZoom = new Segmented(new[] { "Map 1x", "Map 2x", "Map 4x" }, i => PrismRuntime.Map.Zoom = MapZooms[i]);
+            mapZoom.Select(0);
+            col.Children.Add(mapZoom);
+            col.Children.Add(Space(4));
+            vMapInfo = T("", 12, Muted);
+            vMapInfo.TextWrapping = TextWrapping.Wrap;
+            col.Children.Add(vMapInfo);
             col.Children.Add(Space(8));
             col.Children.Add(Label("Layout"));
             col.Children.Add(Space(6));
@@ -452,6 +462,10 @@ namespace PrismHud.WinTAK.Views
                 previewBmp.WritePixels(new Int32Rect(0, 0, ThermalPipeline.OutW, ThermalPipeline.OutH), previewPx, ThermalPipeline.OutW * 4, 0);
                 previewBlank = true;
             }
+            var map = PrismRuntime.Map;
+            vMapInfo.Text = map == null ? "" : map.Active
+                ? string.Format(CultureInfo.InvariantCulture, "Map → HUD {0:0.0} fps{1}", map.SentFps, string.IsNullOrEmpty(map.LastError) ? "" : " · " + map.LastError)
+                : "Map: pick Map mode (full screen) or turn on Map inset. The HUD shows the middle of WinTAK's map as it is on screen.";
             var th = PrismRuntime.Thermal;
             vCamInfo.Text = cam.Streaming
                 ? string.Format(CultureInfo.InvariantCulture, "Camera {0:0.#}° HFOV ({1:0.#}° at {2}x) · to HUD {3:0.0} fps{4}{5}",

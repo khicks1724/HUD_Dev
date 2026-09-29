@@ -17,6 +17,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "sdkconfig.h"
+#include "map_view.h"
 #include "thermal.h"
 
 static const char *TAG = "usb";
@@ -29,7 +30,8 @@ static const char *TAG = "usb";
 #define MAX_FRAME (320 * 256)
 #define N_FRAMES 3 /* one being received, one shown, one spare */
 
-enum { PKT_THERMAL = 1, PKT_PALETTE = 2, PKT_THERMAL_OFF = 3 };
+enum { PKT_THERMAL = 1, PKT_PALETTE = 2, PKT_THERMAL_OFF = 3, PKT_MAP_JPEG = 4 };
+#define MAX_JPEG (96 * 1024)
 
 typedef enum { S_TEXT, S_MAGIC2, S_HDR, S_BODY, S_SUM } rx_state_t;
 
@@ -37,6 +39,7 @@ static uint8_t *s_frames[N_FRAMES];
 static uint32_t s_ok, s_bad, s_resync;
 static int s_write;
 static uint8_t s_pal[768];
+static uint8_t *s_jpeg;
 
 static void run_line(char *line)
 {
@@ -65,6 +68,9 @@ static void deliver(uint8_t type, uint16_t w, uint16_t h, uint16_t hfov_cdeg, co
         break;
     case PKT_THERMAL_OFF:
         thermal_publish_usb(NULL, 0, 0, 0);
+        break;
+    case PKT_MAP_JPEG:
+        map_view_publish_jpeg(body, len);
         break;
     default:
         break;
@@ -131,8 +137,8 @@ static void link_task(void *arg)
                     h = (uint16_t)(hdr[4] | hdr[5] << 8);
                     fov = (uint16_t)(hdr[6] | hdr[7] << 8);
                     len = (uint32_t)hdr[8] | (uint32_t)hdr[9] << 8 | (uint32_t)hdr[10] << 16 | (uint32_t)hdr[11] << 24;
-                    body = type == PKT_THERMAL ? s_frames[s_write] : s_pal;
-                    const uint32_t cap = type == PKT_THERMAL ? MAX_FRAME : sizeof(s_pal);
+                    body = type == PKT_THERMAL ? s_frames[s_write] : type == PKT_MAP_JPEG ? s_jpeg : s_pal;
+                    const uint32_t cap = type == PKT_THERMAL ? MAX_FRAME : type == PKT_MAP_JPEG ? MAX_JPEG : sizeof(s_pal);
                     if (!body || len > cap) {
                         ESP_LOGW(TAG, "bad packet type %u len %lu", type, (unsigned long)len);
                         st = S_TEXT; /* resync on the next A5 5A */
@@ -189,6 +195,8 @@ void usb_link_start(void)
         s_frames[i] = heap_caps_malloc(MAX_FRAME, MALLOC_CAP_SPIRAM);
         if (!s_frames[i]) ESP_LOGE(TAG, "no PSRAM for thermal frames");
     }
+    s_jpeg = heap_caps_malloc(MAX_JPEG, MALLOC_CAP_SPIRAM);
+    map_view_init();
     fflush(stdout);
     ESP_ERROR_CHECK(uart_driver_install(LINK_UART, RX_RING, 4096, 0, NULL, 0));
     uart_vfs_dev_use_driver(LINK_UART);

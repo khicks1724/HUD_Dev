@@ -27,7 +27,7 @@ namespace PrismHud.WinTAK.Services
     internal sealed class HudLink : IDisposable
     {
         internal const int Baud = 2000000;
-        private const byte PktThermal = 1, PktPalette = 2, PktThermalOff = 3;
+        private const byte PktThermal = 1, PktPalette = 2, PktThermalOff = 3, PktMapJpeg = 4;
 
         private readonly object writeLock = new object();
         private readonly StringBuilder rx = new StringBuilder();
@@ -196,6 +196,11 @@ namespace PrismHud.WinTAK.Services
         public bool SendThermalFrame(byte[] px, int w, int h, double hfovDeg)
         {
             return Write(Packet(PktThermal, px, w, h, hfovDeg));
+        }
+
+        public bool SendMapJpeg(byte[] jpg, int w, int h)
+        {
+            return Write(Packet(PktMapJpeg, jpg, w, h, 0));
         }
 
         public bool SendPalette(byte[] rgb768)

@@ -163,7 +163,7 @@ static const struct {
 } k_layers[] = {
     {"tape", HUD_L_TAPE},   {"horizon", HUD_L_HORIZON}, {"reticle", HUD_L_RETICLE}, {"radar", HUD_L_RADAR},
     {"status", HUD_L_STATUS}, {"names", HUD_L_NAMES},   {"ranges", HUD_L_RANGES},   {"info", HUD_L_INFO},
-    {"edge", HUD_L_EDGE},   {"enemyonly", HUD_L_ENEMY_ONLY},
+    {"edge", HUD_L_EDGE},   {"enemyonly", HUD_L_ENEMY_ONLY}, {"mapinset", HUD_L_MAPINSET},
 };
 
 static int cmd_show(int argc, char **argv)
@@ -333,7 +333,7 @@ static int cmd_imu(int argc, char **argv)
 static int cmd_mode(int argc, char **argv)
 {
     if (argc < 2) {
-        printf("usage: mode <0 normal|1 minimal|2 calib|3 status>\n");
+        printf("usage: mode <0 normal|1 minimal|2 calib|3 status|4 map>\n");
         return 1;
     }
     app_lock();
@@ -436,7 +436,7 @@ void console_start(void)
         {.command = "bore", .help = "bore <dx> <dy>: optical centre offset, px", .func = cmd_bore},
         {.command = "cal", .help = "cal level|nose|trim|reset: IMU mount calibration", .func = cmd_cal},
         {.command = "imu", .help = "raw sensor values", .func = cmd_imu},
-        {.command = "mode", .help = "mode <0-3>: display mode", .func = cmd_mode},
+        {.command = "mode", .help = "mode <0-4>: normal, minimal, calib, status, map", .func = cmd_mode},
         {.command = "show", .help = "show [full|clean|combat|nav|<mask>|+layer|-layer]: what the HUD draws", .func = cmd_show},
         {.command = "range", .help = "range <show_m> [radar_m]: hide units beyond; radar scale", .func = cmd_range},
         {.command = "thermal", .help = "cycle thermal underlay", .func = cmd_thermal},
