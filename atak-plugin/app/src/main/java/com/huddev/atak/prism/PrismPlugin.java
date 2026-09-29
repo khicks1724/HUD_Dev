@@ -231,8 +231,8 @@ public final class PrismPlugin implements IPlugin {
         boolean connected = "connected".equals(linkState);
         boolean live = SystemClock.elapsedRealtime() - lastStateMs < 3000;
         if (connected && live) pill.set("Linked", PrismTheme.OK);
-        else if (connected) pill.set("Linked · waiting", PrismTheme.WARN);
-        else pill.set(linkState.startsWith("waiting") ? "Tap OK to allow" : "No HUD", PrismTheme.BAD);
+        else if (connected) pill.set("Waiting", PrismTheme.WARN);
+        else pill.set(linkState.startsWith("waiting") ? "Allow USB" : "No HUD", PrismTheme.BAD);
 
         tape.set(hudH, hudP, hudR, live);
         vPitch.setText(Float.isNaN(hudH) ? "—" : String.format(Locale.US, "%+.1f°", hudP));
@@ -276,6 +276,7 @@ public final class PrismPlugin implements IPlugin {
         words.setOrientation(LinearLayout.VERTICAL);
         TextView word = t.text("PRISM", t.mark, 22, PrismTheme.TEXT);
         word.setLetterSpacing(0.32f);
+        word.setSingleLine(true);
         TextView sub = t.text("TAK HUD LINK", t.cond, 10.5f, PrismTheme.MUTED);
         sub.setLetterSpacing(0.3f);
         words.addView(word);
@@ -284,8 +285,6 @@ public final class PrismPlugin implements IPlugin {
         LinearLayout.LayoutParams wl = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
         wl.leftMargin = t.dp(10);
         head.addView(words, wl);
-        pill = new PrismViews.Pill(t);
-        head.addView(pill);
         col.addView(head);
         col.addView(t.space(12));
         col.addView(new PrismViews.SpectrumRule(pluginContext),
@@ -293,7 +292,13 @@ public final class PrismPlugin implements IPlugin {
         col.addView(t.space(16));
 
         // heading tape + attitude tiles
-        col.addView(t.label("HUD view"));
+        LinearLayout hvRow = new LinearLayout(pluginContext);
+        hvRow.setOrientation(LinearLayout.HORIZONTAL);
+        hvRow.setGravity(Gravity.CENTER_VERTICAL);
+        hvRow.addView(t.label("HUD view"), new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        pill = new PrismViews.Pill(t);
+        hvRow.addView(pill);
+        col.addView(hvRow);
         col.addView(t.space(6));
         tape = new PrismViews.HeadingTape(pluginContext, t.cond);
         tape.setBackground(t.box(Color.BLACK, PrismTheme.LINE, 4));

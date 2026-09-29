@@ -243,14 +243,17 @@ final class PrismViews {
             this.t = t;
             setOrientation(HORIZONTAL);
             setGravity(Gravity.CENTER_VERTICAL);
-            setPadding(t.dp(9), t.dp(5), t.dp(10), t.dp(5));
-            setBackground(t.box(PrismTheme.PANEL, PrismTheme.LINE, 14));
+            setPadding(t.dp(7), t.dp(3), t.dp(8), t.dp(3));
+            setBackground(t.box(PrismTheme.PANEL, PrismTheme.LINE, 10));
             dot = new View(t.ctx);
-            addView(dot, new LayoutParams(t.dp(7), t.dp(7)));
-            label = t.text("", t.cond, 11, PrismTheme.TEXT);
-            label.setLetterSpacing(0.14f);
+            addView(dot, new LayoutParams(t.dp(6), t.dp(6)));
+            label = t.text("", t.cond, 9.5f, PrismTheme.TEXT);
+            label.setLetterSpacing(0.12f);
+            label.setSingleLine(true);
+            label.setMaxWidth(t.dp(110));
+            label.setEllipsize(android.text.TextUtils.TruncateAt.END);
             LayoutParams lp = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-            lp.leftMargin = t.dp(7);
+            lp.leftMargin = t.dp(5);
             addView(label, lp);
         }
 
