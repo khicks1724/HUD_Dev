@@ -220,10 +220,11 @@ static int cmd_bore(int argc, char **argv)
 static int cmd_cal(int argc, char **argv)
 {
     if (argc < 2) {
-        printf("usage: cal level | cal nose | cal trim | cal reset\n"
+        printf("usage: cal level | cal nose | cal trim | cal flip | cal reset\n"
                "  level: hold HUD level, looking forward\n"
                "  nose : then pitch the nose up 30-60 deg and hold still\n"
-               "  trim : looking at the true horizon, zero pitch/roll\n");
+               "  trim : looking at the true horizon, zero pitch/roll\n"
+               "  flip : pitch/roll move the wrong way - turn the mount 180 deg about up\n");
         return 1;
     }
     if (strcmp(argv[1], "level") == 0) {
@@ -236,9 +237,17 @@ static int cmd_cal(int argc, char **argv)
         }
     } else if (strcmp(argv[1], "trim") == 0) {
         imu_trim_level();
+    } else if (strcmp(argv[1], "flip") == 0) {
+        /* Viewing direction reversed: rotate the mount 180 deg about body up
+         * (negate the right and forward rows). Pitch and roll change sign;
+         * yaw direction is unchanged. */
+        for (int i = 0; i < 6; i++) g_cfg.mount[i] = -g_cfg.mount[i];
+        g_cfg.bore_pitch_deg = 0;
+        g_cfg.bore_roll_deg = 0;
+        printf("mount flipped - 'save' to keep\n");
     } else if (strcmp(argv[1], "reset") == 0) {
-        const float ident[9] = {1, 0, 0, 0, 1, 0, 0, 0, 1};
-        memcpy(g_cfg.mount, ident, sizeof(ident));
+        const float mount0[9] = {-1, 0, 0, 0, -1, 0, 0, 0, 1}; /* same as the default */
+        memcpy(g_cfg.mount, mount0, sizeof(mount0));
         g_cfg.bore_pitch_deg = 0;
         g_cfg.bore_roll_deg = 0;
     }

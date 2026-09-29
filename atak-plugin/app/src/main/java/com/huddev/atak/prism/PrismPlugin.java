@@ -380,6 +380,15 @@ public final class PrismPlugin implements IPlugin {
         a2.addView(level, t.weight(1, 3));
         a2.addView(save, t.weight(1, 3));
         col.addView(a2);
+        col.addView(t.space(6));
+        TextView flip = t.button("Flip IMU (pitch/roll reversed)");
+        flip.setOnClickListener(v -> {
+            send("cal flip");
+            send("save");
+            note = "IMU turned 180° and saved. Tap again to undo.";
+            refresh();
+        });
+        col.addView(flip);
         col.addView(t.space(10));
         vNote = t.text("", t.body, 12, PrismTheme.MUTED);
         col.addView(vNote);

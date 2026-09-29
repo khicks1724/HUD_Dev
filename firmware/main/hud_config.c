@@ -68,8 +68,10 @@ void hud_config_defaults(hud_config_t *c)
     c->man_hae = 0;
     c->hfov_deg = CONFIG_HUD_HFOV_DEG / 10.0f;
     c->vfov_deg = CONFIG_HUD_VFOV_DEG / 10.0f;
-    const float ident[9] = {1, 0, 0, 0, 1, 0, 0, 0, 1};
-    memcpy(c->mount, ident, sizeof(ident));
+    /* Default: viewer looks along sensor -Y (the prism-case orientation that
+     * goes with the vertically mirrored display). 'cal flip' toggles it. */
+    const float mount0[9] = {-1, 0, 0, 0, -1, 0, 0, 0, 1};
+    memcpy(c->mount, mount0, sizeof(mount0));
     c->max_range_m = 5000.0f;
     c->radar_range_m = 2000.0f;
     c->brightness = 80;
