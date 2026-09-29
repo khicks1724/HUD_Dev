@@ -173,19 +173,21 @@ final class UsbCdcLink {
 
     /** Send one console line. Returns false if the link is down. */
     synchronized boolean send(String line) {
+        return sendBytes((line + "\r\n").getBytes(StandardCharsets.US_ASCII));
+    }
+
+    /** Raw bytes (a binary usb_link packet, e.g. a map picture). */
+    synchronized boolean sendBytes(byte[] b) {
         if (!open || conn == null) return false;
-        byte[] b = (line + "\r\n").getBytes(StandardCharsets.US_ASCII);
         int off = 0;
         while (off < b.length) {
-            int chunk = Math.min(64, b.length - off);
-            byte[] part = new byte[chunk];
-            System.arraycopy(b, off, part, 0, chunk);
-            int n = conn.bulkTransfer(epOut, part, chunk, 500);
-            if (n < 0) {
+            int chunk = Math.min(16384, b.length - off);
+            int n = conn.bulkTransfer(epOut, b, off, chunk, 1000);
+            if (n <= 0) {
                 close("write failed");
                 return false;
             }
-            off += chunk;
+            off += n;
         }
         return true;
     }

@@ -42,7 +42,7 @@ import gov.tak.platform.marshal.MarshalManager;
 public final class PrismPlugin implements IPlugin {
     private static final long TICK_MS = 1000;
     private static final long LINE_GAP_MS = 3; // ~90-byte line takes ~0.5 ms at 2 Mbit/s
-    private static final String[] MODES = {"Normal", "Minimal", "Calib", "Status"};
+    private static final String[] MODES = {"Normal", "Minimal", "Calib", "Status", "Map"};
     private static final String[] THERMAL = {"Off", "Full", "Hot"};
     private static final String[] RANGES = {"5 km", "10 km", "20 km", "50 km"};
     private static final double[] RANGE_M = {5000, 10000, 20000, 50000};
@@ -51,8 +51,11 @@ public final class PrismPlugin implements IPlugin {
     private static final String[] LAYOUT_CMD = {"full", "clean", "combat", "nav"};
     private static final int[] LAYOUT_MASK = {0x1FF, 0x1A5, 0x3E4, 0x11F};
     private static final String[] LAYER_NAMES = {"Heading tape", "Horizon", "Reticle", "Radar", "Status text",
-            "Names", "Ranges", "Target info", "Edge arrows", "Enemy labels only"};
-    private static final int LAYER_COUNT = 10;
+            "Names", "Ranges", "Target info", "Edge arrows", "Enemy labels only", "Map inset"};
+    private static final int LAYER_COUNT = 11;
+    private static final double[] MAP_ZOOM = {1, 2, 4};
+    private MapCapture mapCapture;
+    private TextView vMapInfo;
 
     private final Context pluginContext;
     private final IHostUIService hostUi;
@@ -129,7 +132,9 @@ public final class PrismPlugin implements IPlugin {
         worker = new HandlerThread("prism");
         worker.start();
         handler = new Handler(worker.getLooper());
+        mapCapture = new MapCapture(handler, packet -> link != null && link.sendBytes(packet));
         handler.post(this::loop);
+        handler.post(this::mapLoop);
     }
 
     @Override
@@ -190,6 +195,16 @@ public final class PrismPlugin implements IPlugin {
     }
 
     /** "fix <lat> <lon> <hae>" as 10-digit MGRS, e.g. "11S MS 12345 67890". */
+    /** 10 Hz: send ATAK's map picture while the HUD is in Map mode or shows the map inset. */
+    private void mapLoop() {
+        try {
+            boolean live = link != null && link.isOpen() && SystemClock.elapsedRealtime() - lastStateMs < 3000;
+            mapCapture.tick(hudMode, hudLayers, live);
+        } catch (RuntimeException ignored) {
+        }
+        if (handler != null) handler.postDelayed(this::mapLoop, 100);
+    }
+
     private static String formatFix(String fixLine) {
         String[] p = fixLine.split(" ");
         if (p.length < 4) return "—";
@@ -262,6 +277,12 @@ public final class PrismPlugin implements IPlugin {
         // follow the HUD, but not in the moment right after our own tap
         if (live && hudLayers >= 0 && SystemClock.elapsedRealtime() - layersSentMs > 2500) showLayers(hudLayers);
         vNote.setText(note);
+        if (mapCapture != null) {
+            boolean mapOn = live && (hudMode == MapCapture.HUD_MODE_MAP || (hudLayers >= 0 && (hudLayers & MapCapture.LAYER_MAP_INSET) != 0));
+            vMapInfo.setText(!mapOn ? "Map: pick Map mode (full screen) or turn on Map inset. The HUD shows the middle of ATAK's map."
+                    : String.format(Locale.US, "Map → HUD %.1f fps%s", mapCapture.fps,
+                    mapCapture.status.isEmpty() ? "" : " · " + mapCapture.status));
+        }
     }
 
     private void showPane() {
@@ -359,6 +380,14 @@ public final class PrismPlugin implements IPlugin {
         col.addView(t.space(6));
         segMode = new PrismViews.Segmented(t, MODES, i -> send("mode " + i));
         col.addView(segMode);
+        col.addView(t.space(6));
+        PrismViews.Segmented segMapZoom = new PrismViews.Segmented(t, new String[]{"Map 1x", "Map 2x", "Map 4x"},
+                i -> mapCapture.zoom = MAP_ZOOM[i]);
+        segMapZoom.select(0);
+        col.addView(segMapZoom);
+        col.addView(t.space(4));
+        vMapInfo = t.text("", t.body, 12, PrismTheme.MUTED);
+        col.addView(vMapInfo);
         col.addView(t.space(8));
         col.addView(t.label("Layout"));
         col.addView(t.space(6));
