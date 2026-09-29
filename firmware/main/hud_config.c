@@ -9,6 +9,28 @@
 #include "sdkconfig.h"
 
 static const char *TAG = "cfg";
+
+/* Kconfig bools are either defined as 1 or not defined at all. */
+#ifdef CONFIG_HUD_FAKE_TARGETS
+#define K_FAKE true
+#else
+#define K_FAKE false
+#endif
+#ifdef CONFIG_HUD_MESH_SA
+#define K_MESH true
+#else
+#define K_MESH false
+#endif
+#ifdef CONFIG_HUD_MIRROR_X
+#define K_MIRROR_X true
+#else
+#define K_MIRROR_X false
+#endif
+#ifdef CONFIG_HUD_MIRROR_Y
+#define K_MIRROR_Y true
+#else
+#define K_MIRROR_Y false
+#endif
 static const char *PART = "hudcfg";
 static const char *NS = "hud";
 
@@ -38,8 +60,8 @@ void hud_config_defaults(hud_config_t *c)
     copy(c->own_callsign, sizeof(c->own_callsign), CONFIG_HUD_OWN_CALLSIGN);
     copy(c->hud_uid, sizeof(c->hud_uid), CONFIG_HUD_UID);
     copy(c->hud_callsign, sizeof(c->hud_callsign), CONFIG_HUD_UID);
-    c->fake_targets = IS_ENABLED(CONFIG_HUD_FAKE_TARGETS);
-    c->mesh_sa = IS_ENABLED(CONFIG_HUD_MESH_SA);
+    c->fake_targets = K_FAKE;
+    c->mesh_sa = K_MESH;
     c->udp_port = CONFIG_HUD_UDP_PORT;
     c->man_lat = atof(CONFIG_HUD_FAKE_LAT);
     c->man_lon = atof(CONFIG_HUD_FAKE_LON);
@@ -51,8 +73,8 @@ void hud_config_defaults(hud_config_t *c)
     c->max_range_m = 5000.0f;
     c->radar_range_m = 2000.0f;
     c->brightness = 80;
-    c->mirror_x = IS_ENABLED(CONFIG_HUD_MIRROR_X);
-    c->mirror_y = IS_ENABLED(CONFIG_HUD_MIRROR_Y);
+    c->mirror_x = K_MIRROR_X;
+    c->mirror_y = K_MIRROR_Y;
 }
 
 /* Each field is a separate NVS key so provision.py and the console can set

@@ -15,12 +15,13 @@
 #include "hud_nmea.h"
 #include "sdkconfig.h"
 
-static const char *TAG = "gnss";
 
 #define GNSS_UART UART_NUM_1
 #define GNSS_BAUD 38400 /* u-blox M10 factory default */
 
 #if CONFIG_HUD_BACKPACK
+static const char *TAG = "gnss";
+
 static void gnss_task(void *arg)
 {
     (void)arg;

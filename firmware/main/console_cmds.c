@@ -141,8 +141,7 @@ static int cmd_hdg(int argc, char **argv)
 static int cmd_trk(int argc, char **argv)
 {
     if (argc < 8) {
-        printf("usage: trk <uid> <type> <lat> <lon> <hae> <stale_s> <callsign...>
-");
+        printf("usage: trk <uid> <type> <lat> <lon> <hae> <stale_s> <callsign...>\n");
         return 1;
     }
     char cs[HUD_COT_CALLSIGN_LEN] = "";
@@ -159,8 +158,7 @@ static int cmd_trk(int argc, char **argv)
 static int cmd_fix(int argc, char **argv)
 {
     if (argc < 3) {
-        printf("usage: fix <lat> <lon> [hae]
-");
+        printf("usage: fix <lat> <lon> [hae]\n");
         return 1;
     }
     app_set_own(atof(argv[1]), atof(argv[2]), argc > 3 ? atof(argv[3]) : 0.0, POS_USB);
