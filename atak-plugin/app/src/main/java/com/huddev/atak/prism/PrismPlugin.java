@@ -277,11 +277,7 @@ public final class PrismPlugin implements IPlugin {
         TextView word = t.text("PRISM", t.mark, 22, PrismTheme.TEXT);
         word.setLetterSpacing(0.32f);
         word.setSingleLine(true);
-        TextView sub = t.text("TAK HUD LINK", t.cond, 10.5f, PrismTheme.MUTED);
-        sub.setLetterSpacing(0.3f);
         words.addView(word);
-        words.addView(t.space(3));
-        words.addView(sub);
         LinearLayout.LayoutParams wl = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
         wl.leftMargin = t.dp(10);
         head.addView(words, wl);
