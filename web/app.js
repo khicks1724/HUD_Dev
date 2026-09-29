@@ -279,7 +279,7 @@ ${!pr.inFront ? "behind the viewer → edge cue" : pr.onScreen ? "on screen" : "
     await disconnectLive();
     try {
       const port = await navigator.serial.requestPort();
-      await port.open({ baudRate: 115200 });
+      await port.open({ baudRate: 2000000 }); // HUD USB link (firmware/main/usb_link.h)
       L.kind = "serial";
       L.port = port;
       const enc = new TextEncoderStream();

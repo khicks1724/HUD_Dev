@@ -23,7 +23,7 @@ anything it reads back.
 
 - Start from the ATAK plugin template (Kyle's `Test Coding/ATAK Plugin`
   folder may already have one set up).
-- USB serial: `usb-serial-for-android` (supports CH34x). Open at 115200 8N1
+- USB serial: `usb-serial-for-android` (supports CH34x). Open at 2,000,000 8N1 (the HUD switches its USB link to 2 Mbit/s after boot)
   and request USB permission on attach (`USB_DEVICE_ATTACHED` intent filter
   with the CH343 VID/PID 0x1A86/0x55D3).
 - Every 1 s, send `fix` from `MapView.getSelfMarker()`.

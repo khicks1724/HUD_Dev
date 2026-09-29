@@ -1,5 +1,5 @@
 /*
- * console_cmds.c - USB-C serial console (115200, CH343 COM port).
+ * console_cmds.c - USB-C serial console (2 Mbit/s, CH343 COM port; see usb_link.h).
  *
  *   idf.py -p COMx monitor      then type "help"
  *
@@ -24,6 +24,7 @@
 #include "render_task.h"
 #include "telemetry.h"
 #include "thermal.h"
+#include "usb_link.h"
 
 static void set_str(char *dst, size_t cap, const char *src)
 {
@@ -351,7 +352,11 @@ static int cmd_thermal(int argc, char **argv)
     } else {
         thermal_cycle_mode();
     }
-    printf("thermal mode %d (available=%d)\n", (int)g_app.thermal_mode, thermal_available());
+    uint32_t ok, bad, rs;
+    usb_link_stats(&ok, &bad, &rs);
+    printf("thermal mode %d (available=%d) source=%s usb_fps=%.1f packets ok=%lu bad=%lu resync=%lu\n",
+           (int)g_app.thermal_mode, thermal_available(), thermal_source_name(), (double)thermal_usb_fps(),
+           (unsigned long)ok, (unsigned long)bad, (unsigned long)rs);
     return 0;
 }
 
@@ -407,12 +412,12 @@ static int cmd_reboot(int argc, char **argv)
 
 void console_start(void)
 {
-    esp_console_repl_t *repl = NULL;
-    esp_console_repl_config_t rc = ESP_CONSOLE_REPL_CONFIG_DEFAULT();
-    rc.prompt = "hud>";
-    rc.max_cmdline_length = 256;
-    esp_console_dev_uart_config_t uc = ESP_CONSOLE_DEV_UART_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_console_new_repl_uart(&uc, &rc, &repl));
+    /* No REPL: usb_link.c reads the port and runs each line, because the
+     * same port also carries binary thermal frames from the WinTAK plugin. */
+    esp_console_config_t cc = ESP_CONSOLE_CONFIG_DEFAULT();
+    cc.max_cmdline_length = 256;
+    cc.max_cmdline_args = 16;
+    ESP_ERROR_CHECK(esp_console_init(&cc));
     esp_console_register_help_command();
 
     const esp_console_cmd_t cmds[] = {
@@ -444,5 +449,5 @@ void console_start(void)
     for (size_t i = 0; i < sizeof(cmds) / sizeof(cmds[0]); i++) {
         ESP_ERROR_CHECK(esp_console_cmd_register(&cmds[i]));
     }
-    ESP_ERROR_CHECK(esp_console_start_repl(repl));
+    usb_link_start();
 }

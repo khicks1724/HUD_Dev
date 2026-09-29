@@ -74,6 +74,9 @@ typedef struct {
      * a side-mounted camera needs a fixed shift and a small roll correction.
      * shift is in HUD pixels, roll in degrees (+ = image rotates clockwise). */
     float shift_x, shift_y, roll_deg;
+    /* Optional 256-entry colour maps (index = intensity) for FULL and HOT;
+     * NULL = white-hot greyscale. */
+    const uint16_t *lut_full, *lut_hot;
 } hud_thermal_t;
 
 typedef struct {

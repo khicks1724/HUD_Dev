@@ -133,8 +133,8 @@ final class UsbCdcLink {
         }
         if (ctrlIf != null) c.claimInterface(ctrlIf, true);
         c.claimInterface(dataIf, true);
-        // SET_LINE_CODING: 115200 8N1 (the HUD console)
-        byte[] coding = {(byte) 0x00, (byte) 0xC2, 0x01, 0x00, 0, 0, 8};
+        // SET_LINE_CODING: 2,000,000 8N1 (the HUD's USB link, firmware/main/usb_link.h)
+        byte[] coding = {(byte) 0x80, (byte) 0x84, 0x1E, 0x00, 0, 0, 8};
         int ifNum = ctrlIf != null ? ctrlIf.getId() : 0;
         c.controlTransfer(0x21, 0x20, 0, ifNum, coding, coding.length, 500);
         // SET_CONTROL_LINE_STATE: DTR=0, RTS=0 (never reset the ESP32)

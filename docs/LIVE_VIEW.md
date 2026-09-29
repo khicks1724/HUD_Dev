@@ -19,7 +19,7 @@ either over USB-C or over Wi-Fi.
    of the firmware renderer, so it looks the same as the prism. The console
    box sends any command (`status`, `mode 2`, `tak ...`).
 
-115200 baud is ~11 kB/s, which is enough for state at 5-10 Hz with 20
+2 Mbit/s is ~200 kB/s (the boot log before that is 115200), plenty for state at 5-10 Hz with 20
 targets but not for raw frames. (The CH343 can go much faster if we ever
 want frames over USB.)
 

@@ -420,8 +420,12 @@ static void draw_thermal(gfx_t *g, const hud_thermal_t *th, hud_thermal_mode_t m
             const int sx = th->src_x + (int)(u * kx), sy = th->src_y + (int)(vv * ky);
             if (u < 0 || vv < 0 || sx < 0 || sx >= th->w || sy < 0 || sy >= th->h) continue;
             int v = th->px[(size_t)sy * th->w + sx];
+            if (hot_only && v < th->hot_threshold) continue;
+            if (th->lut_full) { /* colour palette from the host */
+                out[x] = hot_only ? th->lut_hot[v] : th->lut_full[v];
+                continue;
+            }
             if (hot_only) {
-                if (v < th->hot_threshold) continue;
                 v = 120 + (v - th->hot_threshold) * 135 / (256 - th->hot_threshold);
             } else {
                 v = v * 3 / 4; /* keep symbology brighter than the underlay */

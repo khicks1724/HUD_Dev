@@ -41,7 +41,7 @@ import gov.tak.platform.marshal.MarshalManager;
  */
 public final class PrismPlugin implements IPlugin {
     private static final long TICK_MS = 1000;
-    private static final long LINE_GAP_MS = 20; // ~90-byte line takes ~8 ms at 115200 baud
+    private static final long LINE_GAP_MS = 3; // ~90-byte line takes ~0.5 ms at 2 Mbit/s
     private static final String[] MODES = {"Normal", "Minimal", "Calib", "Status"};
     private static final String[] THERMAL = {"Off", "Full", "Hot"};
     private static final String[] RANGES = {"5 km", "10 km", "20 km", "50 km"};

@@ -96,7 +96,7 @@ int main(void)
                 if (xx >= 0 && xx < 640 && yy >= 0 && yy < 512) th[yy * 640 + xx] = (uint8_t)(235 - abs(dx) * 4 - abs(dy));
             }
     }
-    hud_thermal_t tf = {th, 640, 512, 0, 0, 0, 0, 170, 0, 0, 0};
+    hud_thermal_t tf = {th, 640, 512, 0, 0, 0, 0, 170, 0, 0, 0, NULL, NULL};
     const float half = fx_cam * tanf(20.0f * 3.14159265f / 180.0f);
     tf.src_w = tf.src_h = (int)(2 * half);
     tf.src_x = (640 - tf.src_w) / 2;
@@ -153,5 +153,35 @@ int main(void)
         snprintf(path, sizeof(path), "preview_layout_%s.ppm", names[l]);
         write_ppm(path, &g, 2);
     }
+
+    /* RPX-style 32 deg camera over USB: 160x120 frame, ironbow palette, the
+     * frame lands in the middle of the 40 deg prism view. */
+    static uint8_t rpx[160 * 120];
+    for (int y = 0; y < 120; y++)
+        for (int x = 0; x < 160; x++) {
+            int v = y < 55 ? 30 + y / 3 : 70 + (y - 55) / 2;
+            const int dx = x - 70, dy = y - 60;
+            if (dx * dx + dy * dy * 3 < 60) v = 250 - (dx * dx + dy * dy * 3);
+            if ((x - 110) * (x - 110) + (y - 66) * (y - 66) * 3 < 40) v = 230;
+            rpx[y * 160 + x] = (uint8_t)v;
+        }
+    static uint16_t lut_full[256], lut_hot[256];
+    for (int i = 0; i < 256; i++) { /* rough ironbow */
+        const float t = i / 255.0f;
+        int r = (int)(255 * fminf(1.0f, t * 1.8f)), gg = (int)(255 * fmaxf(0.0f, t * 1.6f - 0.6f)),
+            b = (int)(255 * (t < 0.35f ? t * 2.2f : fmaxf(0.0f, 0.77f - (t - 0.35f) * 2.5f)));
+        if (t > 0.85f) b = (int)(255 * (t - 0.85f) * 6.0f);
+        if (b > 255) b = 255;
+        lut_hot[i] = GFX_RGB(r, gg, b);
+        lut_full[i] = GFX_RGB(r * 3 / 4, gg * 3 / 4, b * 3 / 4);
+    }
+    const float fxc = 80.0f / tanf(16.0f * 3.14159265f / 180.0f);
+    const int sw = (int)(2 * fxc * tanf(20.0f * 3.14159265f / 180.0f) + 0.5f);
+    hud_thermal_t tu = {rpx, 160, 120, (160 - sw) / 2, (120 - sw) / 2, sw, sw, 150, 0, 0, 0, lut_full, lut_hot};
+    s.thermal = &tu;
+    s.thermal_mode = HUD_THERMAL_FULL;
+    s.layers = hud_layout_mask(HUD_LAYOUT_CLEAN);
+    hud_render(&g, &s, tc, nc);
+    write_ppm("preview_rpx_iron.ppm", &g, 2);
     return 0;
 }

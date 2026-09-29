@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <WinTakSdkDir Condition="'$(WinTakSdkDir)' == '' and Exists('$(ProgramFiles)\WinTAK\NuGet\WinTak-Dependencies.5.8.0.147.nupkg')">$(ProgramFiles)\WinTAK</WinTakSdkDir>
+    <WinTakSdkDir Condition="'$(WinTakSdkDir)' == '' and Exists('$(MSBuildThisFileDirectory).sdk\NuGet\WinTak-Dependencies.5.8.0.147.nupkg')">$(MSBuildThisFileDirectory).sdk</WinTakSdkDir>
+    <RestoreAdditionalProjectSources Condition="'$(WinTakSdkDir)' != ''">$(RestoreAdditionalProjectSources);$(WinTakSdkDir)\NuGet</RestoreAdditionalProjectSources>
+  </PropertyGroup>
+  <Target Name="CheckWinTak58Sdk" BeforeTargets="PrepareForBuild" Condition="!Exists('$(WinTakSdkDir)\NuGet\WinTak-Dependencies.5.8.0.147.nupkg')">
+    <Error Text="WinTAK SDK 5.8.0.147 was not found. Run scripts\setup-sdk.ps1 or set WinTakSdkDir to its extracted/installed root." />
+  </Target>
+</Project>
+

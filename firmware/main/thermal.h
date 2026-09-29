@@ -24,5 +24,18 @@ bool thermal_available(void);
  * The buffer must stay valid until the next call. */
 void thermal_publish_external(const uint8_t *px, int w, int h, uint8_t hot_threshold);
 
+/* A frame from the USB host (WinTAK plugin + RPX camera): w x h intensity,
+ * camera horizontal FOV in degrees, boresighted with the HUD. The HUD works
+ * out where it lands (a 32 deg camera fills the middle of a 40 deg prism).
+ * px NULL = source off. The buffer must stay valid until the next call. */
+void thermal_publish_usb(const uint8_t *px, int w, int h, float hfov_deg);
+
+/* 256 x RGB888 colour map, index = intensity. Applies to every source. */
+void thermal_set_palette(const uint8_t rgb[768]);
+
+/* "usb", "hub", "synthetic" or "none", and USB frames per second. */
+const char *thermal_source_name(void);
+float thermal_usb_fps(void);
+
 /* Cycle OFF -> FULL -> HOT -> OFF. */
 void thermal_cycle_mode(void);

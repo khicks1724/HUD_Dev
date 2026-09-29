@@ -11,7 +11,7 @@
 #include "hud_config.h"
 #include "sdkconfig.h"
 
-static const char *TAG = "thermal";
+static const char *TAG __attribute__((unused)) = "thermal";
 
 /* Boson 640 geometry. With the 50 deg HFOV lens (21640AS50) the camera is
  * wider than the ~40 deg prism view, so only the central part is shown. */
@@ -96,10 +96,77 @@ void thermal_start(void)
 static hud_thermal_t s_ext;
 static volatile bool s_ext_valid;
 
+/* USB host frames (usb_link.c) */
+static hud_thermal_t s_usb;
+static volatile bool s_usb_valid;
+static volatile int64_t s_usb_mono_ms;
+static float s_usb_fps;
+static int s_usb_count;
+static int64_t s_usb_fps_t0;
+
+/* colour maps: FULL is dimmed so symbology stays brighter than the underlay */
+static uint16_t s_lut_full[256], s_lut_hot[256];
+static volatile bool s_lut_valid;
+
+void thermal_set_palette(const uint8_t rgb[768])
+{
+    for (int i = 0; i < 256; i++) {
+        const int r = rgb[i * 3], g = rgb[i * 3 + 1], b = rgb[i * 3 + 2];
+        s_lut_hot[i] = GFX_RGB(r, g, b);
+        s_lut_full[i] = GFX_RGB(r * 3 / 4, g * 3 / 4, b * 3 / 4);
+    }
+    s_lut_valid = true;
+}
+
+void thermal_publish_usb(const uint8_t *px, int w, int h, float hfov_deg)
+{
+    if (!px || w <= 0 || h <= 0 || hfov_deg <= 1.0f) {
+        s_usb_valid = false;
+        return;
+    }
+    /* Camera pixels covering the HUD field of view (square pixels, shared
+     * boresight). A camera narrower than the prism gives a crop bigger than
+     * the frame, i.e. negative src_x/src_y: the edges stay clear. */
+    const float fx = (w * 0.5f) / tanf(hfov_deg * 0.5f * (float)M_PI / 180.0f);
+    const int sw = (int)(2.0f * fx * tanf(g_cfg.hfov_deg * 0.5f * (float)M_PI / 180.0f) + 0.5f);
+    const int sh = (int)(2.0f * fx * tanf(g_cfg.vfov_deg * 0.5f * (float)M_PI / 180.0f) + 0.5f);
+    s_usb = (hud_thermal_t){px, w, h, (w - sw) / 2, (h - sh) / 2, sw, sh, 150, 0, 0, 0, NULL, NULL};
+    const int64_t now = app_mono_ms();
+    s_usb_mono_ms = now;
+    s_usb_valid = true;
+    s_available = true;
+    if (++s_usb_count >= 10) {
+        s_usb_fps = s_usb_count * 1000.0f / (float)(now - s_usb_fps_t0 + 1);
+        s_usb_count = 0;
+        s_usb_fps_t0 = now;
+    }
+}
+
+static bool usb_live(void)
+{
+    return s_usb_valid && app_mono_ms() - s_usb_mono_ms < 2000;
+}
+
+const char *thermal_source_name(void)
+{
+    if (usb_live()) return "usb";
+    if (s_ext_valid) return "hub";
+#if CONFIG_HUD_THERMAL_SYNTHETIC
+    return "synthetic";
+#else
+    return "none";
+#endif
+}
+
+float thermal_usb_fps(void)
+{
+    return usb_live() ? s_usb_fps : 0.0f;
+}
+
 void thermal_publish_external(const uint8_t *px, int w, int h, uint8_t hot_threshold)
 {
     /* The hub already cropped to the HUD FOV: show the whole frame. */
-    s_ext = (hud_thermal_t){px, w, h, 0, 0, w, h, hot_threshold, 0, 0, 0};
+    s_ext = (hud_thermal_t){px, w, h, 0, 0, w, h, hot_threshold, 0, 0, 0, NULL, NULL};
     s_ext_valid = true;
     s_available = true;
 }
@@ -107,7 +174,9 @@ void thermal_publish_external(const uint8_t *px, int w, int h, uint8_t hot_thres
 const hud_thermal_t *thermal_latest(void)
 {
     hud_thermal_t *t = NULL;
-    if (s_ext_valid) {
+    if (usb_live()) {
+        t = &s_usb;
+    } else if (s_ext_valid) {
         t = &s_ext;
     } else if (s_available && s_frame[s_front]) {
         s_desc.px = s_frame[s_front];
@@ -117,19 +186,21 @@ const hud_thermal_t *thermal_latest(void)
         t->shift_x = g_cfg.th_shift_x;
         t->shift_y = g_cfg.th_shift_y;
         t->roll_deg = g_cfg.th_roll_deg;
+        t->lut_full = s_lut_valid ? s_lut_full : NULL;
+        t->lut_hot = s_lut_valid ? s_lut_hot : NULL;
     }
     return t;
 }
 
 bool thermal_available(void)
 {
-    return s_available;
+    return s_available && (usb_live() || s_ext_valid || s_frame[s_front] != NULL);
 }
 
 void thermal_cycle_mode(void)
 {
     app_lock();
     g_app.thermal_mode = (hud_thermal_mode_t)((g_app.thermal_mode + 1) % HUD_THERMAL_COUNT);
-    if (!s_available) g_app.thermal_mode = HUD_THERMAL_OFF;
+    if (!thermal_available()) g_app.thermal_mode = HUD_THERMAL_OFF;
     app_unlock();
 }
