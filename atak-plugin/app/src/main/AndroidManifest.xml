@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="GoogleAppIndexingWarning">
+
+    <uses-feature android:name="android.hardware.usb.host" android:required="false" />
+
+    <application
+        android:allowBackup="false"
+        android:description="@string/app_desc"
+        android:icon="@drawable/ic_hudlink"
+        android:label="@string/app_name"
+        android:theme="@android:style/Theme.Material.NoActionBar">
+
+        <meta-data
+            android:name="plugin-api"
+            android:value="${atakApiVersion}" />
+        <meta-data
+            android:name="app_desc"
+            android:value="@string/app_desc" />
+
+        <!-- ATAK 4.6+ discovers plugins through this host-defined component. -->
+        <activity
+            android:name="com.atakmap.app.component"
+            android:exported="true"
+            tools:ignore="MissingClass">
+            <intent-filter android:label="@string/app_name">
+                <action android:name="com.atakmap.app.component" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

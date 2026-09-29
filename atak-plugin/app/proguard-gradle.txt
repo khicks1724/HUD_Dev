@@ -1,0 +1,22 @@
+-dontskipnonpubliclibraryclasses
+-dontshrink
+-dontoptimize
+-renamesourcefileattribute SourceFile
+-keepattributes SourceFile,LineNumberTable,*Annotation*,Signature,InnerClasses
+-applymapping <atak.proguard.mapping>
+
+-keep class * implements gov.tak.api.plugin.IPlugin { *; }
+-keep,allowobfuscation @interface gov.tak.api.annotation.DontObfuscate
+-keep @gov.tak.api.annotation.DontObfuscate class * { *; }
+-keepclassmembers class * {
+    @gov.tak.api.annotation.DontObfuscate *;
+}
+
+-keepclassmembers class **.R$* {
+    public static <fields>;
+}
+
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}

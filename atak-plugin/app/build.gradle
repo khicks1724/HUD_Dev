@@ -1,0 +1,131 @@
+// HUD Link: ATAK 5.8 CIV plugin that feeds the TAK HUD over USB-C.
+// Build setup follows the RF_Sim_ATAK project. The ATAK SDK is NOT in this
+// repo: point local.properties at an SDK folder (see ../README.md).
+buildscript {
+    ext.PLUGIN_VERSION = "0.1.0"
+    ext.ATAK_VERSION = "5.8.0"
+
+    def readLocalProperty = { String key, Object fallback = null ->
+        def value = project.findProperty(key)
+        if (value != null) return value
+        def localFile = rootProject.file("local.properties")
+        if (!localFile.canRead()) return fallback
+        def properties = new Properties()
+        localFile.withInputStream { properties.load(it) }
+        return properties.getProperty(key, fallback as String)
+    }
+    ext.atakSdkDir = readLocalProperty("atak.sdk.dir", "${rootDir}/sdk/ATAK-CIV-5.8.0.4-SDK")
+    // The TAK dev plugin reads these; local SDK builds leave the repository off.
+    ext.isDevKitEnabled = { -> false }
+    ext.takrepoUrl = "https://localhost/"
+    ext.takrepoUser = ""
+    ext.takrepoPassword = ""
+
+    repositories {
+        google()
+        mavenCentral()
+        mavenLocal()
+    }
+    dependencies {
+        classpath files("${atakSdkDir}/atak-gradle-takdev.jar")
+    }
+}
+
+plugins {
+    id("com.android.application")
+}
+
+apply plugin: "atak-takdev-plugin"
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        mavenLocal()
+    }
+}
+
+android {
+    namespace "com.huddev.atak.hudlink"
+    compileSdk 36
+
+    buildFeatures {
+        buildConfig = true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    defaultConfig {
+        minSdk 23
+        targetSdk 34
+        ndk {
+            abiFilters "armeabi-v7a", "arm64-v8a", "x86"
+        }
+    }
+
+    signingConfigs {
+        debug {
+            // The SDK's development keystore (its published dev credentials).
+            storeFile file("${atakSdkDir}/android_keystore")
+            storePassword "tnttnt"
+            keyAlias "wintec_mapping"
+            keyPassword "tnttnt"
+        }
+    }
+
+    buildTypes {
+        debug {
+            debuggable true
+            matchingFallbacks = ["sdk"]
+        }
+        release {
+            minifyEnabled true
+            signingConfig signingConfigs.debug
+            matchingFallbacks = ["odk"]
+            proguardFiles "proguard-gradle.txt", "proguard-gradle-repackage.txt"
+        }
+    }
+
+    flavorDimensions "application"
+    productFlavors {
+        civ {
+            dimension "application"
+            getIsDefault().set(true)
+            manifestPlaceholders = [
+                    atakApiVersion: "com.atakmap.app@${ATAK_VERSION}.CIV"
+            ]
+        }
+    }
+
+    packagingOptions {
+        jniLibs.useLegacyPackaging = true
+        resources.excludes += ["META-INF/INDEX.LIST"]
+    }
+
+    sourceSets {
+        main {
+            setProperty(
+                    "archivesBaseName",
+                    "ATAK-Plugin-${rootProject.name}-${PLUGIN_VERSION}-${getVersionName()}-${ATAK_VERSION}"
+            )
+            defaultConfig.versionCode = getVersionCode()
+            defaultConfig.versionName = "${PLUGIN_VERSION} (${getVersionName()}) - [${ATAK_VERSION}]"
+        }
+        debug.setRoot("build-types/debug")
+        release.setRoot("build-types/release")
+    }
+
+    lint {
+        abortOnError false
+    }
+}
+
+dependencies {
+    def mainJar = file("${atakSdkDir}/main.jar")
+    if (mainJar.isFile()) {
+        compileOnly files(mainJar)
+    }
+}

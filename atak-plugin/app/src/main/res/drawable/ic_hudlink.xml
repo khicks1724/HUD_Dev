@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Reticle in a sensor window, matching the web page logo -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="34"
+    android:viewportHeight="34">
+    <path android:fillColor="#FF050505" android:pathData="M3,3h28v28h-28z" />
+    <path android:fillColor="#FFBDBDBD" android:pathData="M17,18m-8,0a8,8 0,1 1,16 0a8,8 0,1 1,-16 0" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M17,18m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0" />
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="1.8"
+        android:pathData="M3,9V3h6M25,3h6v6M31,25v6h-6M9,31H3v-6" />
+    <path android:strokeColor="#FF000000" android:strokeWidth="1.2"
+        android:pathData="M17,11v4M17,21v4M10,18h4M20,18h4" />
+</vector>
