@@ -47,6 +47,8 @@ namespace PrismHud.WinTAK.Services
             Hud.Start();
             Camera.Start();
             timer = new Timer(_ => Loop(), null, 1500, 1000);
+            var app = System.Windows.Application.Current;
+            if (app != null) app.Exit += (s, e) => Stop();
             testTimer = new Timer(_ => TestFrame(), null, 1000, 100);
         }
 
@@ -54,6 +56,22 @@ namespace PrismHud.WinTAK.Services
         {
             Hud.SendPalette(Palettes.Build(Settings.Palette));
             Hud.SendLine("range " + ((int)RangesM[Settings.RangeIndex]).ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+
+        /// <summary>WinTAK is closing: stop timers and release both COM ports.</summary>
+        public static void Stop()
+        {
+            try
+            {
+                timer?.Dispose();
+                testTimer?.Dispose();
+                timer = testTimer = null;
+                Camera?.Dispose();
+                Hud?.Dispose();
+            }
+            catch (Exception)
+            {
+            }
         }
 
         public static void SetPalette(int index)

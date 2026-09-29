@@ -51,8 +51,10 @@ namespace PrismHud.WinTAK.Services
         {
             Snapshot snap = null;
             var d = Application.Current?.Dispatcher;
-            if (d == null) return new Snapshot();
-            d.Invoke(() => snap = CollectOnUi());
+            if (d == null || d.HasShutdownStarted) return new Snapshot();
+            // Low priority and a timeout: never hold up WinTAK's UI or its shutdown.
+            d.Invoke(() => snap = CollectOnUi(), System.Windows.Threading.DispatcherPriority.Background,
+                System.Threading.CancellationToken.None, TimeSpan.FromSeconds(2));
             return snap ?? new Snapshot();
         }
 
