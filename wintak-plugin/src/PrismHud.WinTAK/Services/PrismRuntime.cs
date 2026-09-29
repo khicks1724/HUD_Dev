@@ -41,7 +41,7 @@ namespace PrismHud.WinTAK.Services
             Camera = new RpxCamera { PreferredPort = Settings.CameraPort };
             Camera.SetEnhance(Settings.Enhance);
             Camera.SetZoom(Settings.Zoom);
-            Thermal = new ThermalPipeline(Hud, Camera) { CameraHfovDeg = Settings.CameraHfovDeg, TargetFps = Settings.ThermalFps };
+            Thermal = new ThermalPipeline(Hud, Camera) { CameraHfovDeg = Settings.CameraHfovDeg };
             Feeder = new TrackFeeder(location, renderer, groups) { MaxRangeM = RangesM[Settings.RangeIndex] };
             Hud.Connected += OnHudConnected;
             Camera.StreamStarted += OnCameraStreaming;

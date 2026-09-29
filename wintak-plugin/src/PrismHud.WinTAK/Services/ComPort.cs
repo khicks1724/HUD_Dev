@@ -75,6 +75,11 @@ namespace PrismHud.WinTAK.Services
             stream.Write(buf, offset, count);
         }
 
+        public void Dtr(bool on)
+        {
+            if (!closed) EscapeCommFunction(handle, on ? SetDtr : ClrDtr);
+        }
+
         public void Dispose()
         {
             if (closed) return;

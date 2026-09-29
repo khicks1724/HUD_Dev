@@ -4,15 +4,15 @@ using System.Threading;
 namespace PrismHud.WinTAK.Services
 {
     /// <summary>
-    /// RPX 640x480 frames -> 160x120 (4x4 average) -> HUD at a fixed rate.
+    /// RPX 640x480 frames -> 128x96 (5x5 average) -> HUD at up to 15 fps.
     /// The HUD places the frame from the camera FOV we send (its own FOV is
     /// ~40 deg, the RPX is 32 deg / zoom), so the heat lines up with the world.
-    /// A 160x120 frame is 19.2 kB: ~10 fps fits the 2 Mbit/s link with room
-    /// for track lines.
+    /// A 128x96 frame is 12.3 kB, ~60 ms on the 2 Mbit/s link, so ~15 fps
+    /// fits with room for track lines (160x120 only managed ~8 and felt laggy).
     /// </summary>
     internal sealed class ThermalPipeline
     {
-        internal const int OutW = 160, OutH = 120;
+        internal const int OutW = 128, OutH = 96, Step = RpxCamera.Width / OutW; // 5x5 average
 
         private readonly HudLink hud;
         private readonly RpxCamera camera;
@@ -22,7 +22,7 @@ namespace PrismHud.WinTAK.Services
         private int sending; // 1 while a frame is being written
 
         public double CameraHfovDeg = 32.0;
-        public double TargetFps = 10;
+        public double TargetFps = 15;
         public bool SendToHud = true;
         public int FramesSent;
         public double SentFps;
@@ -90,7 +90,7 @@ namespace PrismHud.WinTAK.Services
 
         internal static void Downscale(byte[] src, byte[] dst)
         {
-            const int k = RpxCamera.Width / OutW; // 4
+            const int k = Step;
             for (var y = 0; y < OutH; y++)
             {
                 for (var x = 0; x < OutW; x++)
@@ -100,7 +100,7 @@ namespace PrismHud.WinTAK.Services
                     for (var dy = 0; dy < k; dy++)
                     {
                         var r = row + dy * RpxCamera.Width;
-                        sum += src[r] + src[r + 1] + src[r + 2] + src[r + 3];
+                        for (var dx = 0; dx < k; dx++) sum += src[r + dx];
                     }
                     dst[y * OutW + x] = (byte)(sum / (k * k));
                 }

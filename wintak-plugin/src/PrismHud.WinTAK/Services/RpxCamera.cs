@@ -19,7 +19,7 @@ namespace PrismHud.WinTAK.Services
     {
         internal const int Width = 640, Height = 480, FrameBytes = Width * Height;
 
-        private const ushort TypeStreamEnable = 0x0007, TypeRaw8 = 0x000B, TypeOsd = 0x000C, TypeZoom = 0x0010,
+        private const ushort TypeReadSerials = 0x0016, TypeStreamEnable = 0x0007, TypeRaw8 = 0x000B, TypeOsd = 0x000C, TypeZoom = 0x0010,
             TypePalette = 0x0011, TypeEnhance = 0x0012;
         private const int HeaderLen = 12, MaxPacket = FrameBytes + 64;
         private const uint Magic = 0x57787052; // "RpxW" little-endian
@@ -32,8 +32,9 @@ namespace PrismHud.WinTAK.Services
         private volatile bool disposed;
         private int watching;
 
-        private DateTime lastFrameUtc = DateTime.MinValue, openedUtc, lastStartUtc;
+        private DateTime lastFrameUtc = DateTime.MinValue, lastPacketUtc = DateTime.MinValue, openedUtc, lastStartUtc, lastPingUtc;
         private int starts;
+        private bool configured;
         private bool announced;
         private double fps;
 
@@ -59,14 +60,19 @@ namespace PrismHud.WinTAK.Services
 
         public void Start()
         {
-            watchdog = new Timer(_ => Watch(), null, 0, 1000);
+            watchdog = new Timer(_ => Watch(), null, 0, 250);
         }
 
         /// <summary>
-        /// Once a second: open the camera when it appears; give it time to boot,
-        /// set it up once, then only re-send "start stream" (every 5 s) until
-        /// frames flow; if its port disappears or it stays silent, close and
-        /// start over, so a camera that is plugged back in comes back by itself.
+        /// Every 250 ms. Connecting goes:
+        ///  1. open the port as soon as the camera's USB port appears;
+        ///  2. until the camera answers, pulse DTR and ask for its serial
+        ///     numbers every second (a camera still booting misses a DTR that
+        ///     was raised before it was up, and then never sends anything);
+        ///  3. on its first answer, set it up and start the 8-bit stream;
+        ///  4. if frames don't follow within 3 s, pulse DTR and start again.
+        /// An unplugged port, or 20 s with no answer at all, closes it and
+        /// starts over, so a camera plugged back in comes back by itself.
         /// </summary>
         private void Watch()
         {
@@ -75,7 +81,11 @@ namespace PrismHud.WinTAK.Services
             {
                 if (!IsOpen)
                 {
-                    TryOpen();
+                    if ((DateTime.UtcNow - lastPingUtc).TotalSeconds >= 1) // don't hammer the registry
+                    {
+                        lastPingUtc = DateTime.UtcNow;
+                        TryOpen();
+                    }
                     return;
                 }
                 var now = DateTime.UtcNow;
@@ -94,24 +104,36 @@ namespace PrismHud.WinTAK.Services
                     }
                     return;
                 }
-                var sinceOpen = (now - openedUtc).TotalSeconds;
-                var silent = (now - (lastFrameUtc > openedUtc ? lastFrameUtc : openedUtc)).TotalSeconds;
-                if (sinceOpen < 2)
+                var alive = lastPacketUtc > openedUtc;
+                if (!alive)
                 {
-                    Status = "RPX camera on " + PortName + ", booting…";
-                    return;
-                }
-                if (starts == 0)
-                {
-                    Configure();
-                }
-                else if ((now - lastStartUtc).TotalSeconds >= 5)
-                {
-                    if (starts >= 4 && silent > 20)
+                    if ((now - openedUtc).TotalSeconds > 20)
                     {
-                        Drop("RPX camera not streaming, reconnecting");
+                        Drop("RPX camera not answering, reopening");
                         return;
                     }
+                    if ((now - lastPingUtc).TotalSeconds >= 1)
+                    {
+                        lastPingUtc = now;
+                        PulseDtr();
+                        Send(TypeReadSerials, 0, 0);
+                    }
+                    Status = "RPX camera on " + PortName + ", waiting for it to boot…";
+                    return;
+                }
+                if (!configured)
+                {
+                    configured = true;
+                    Configure();
+                }
+                else if ((now - lastStartUtc).TotalSeconds >= 3)
+                {
+                    if (starts >= 6)
+                    {
+                        Drop("RPX camera not streaming, reopening");
+                        return;
+                    }
+                    PulseDtr();
                     StartStream();
                 }
                 Status = "RPX camera on " + PortName + ", starting its stream…";
@@ -124,6 +146,15 @@ namespace PrismHud.WinTAK.Services
             {
                 Interlocked.Exchange(ref watching, 0);
             }
+        }
+
+        private void PulseDtr()
+        {
+            var p = port;
+            if (p == null) return;
+            p.Dtr(false);
+            Thread.Sleep(30);
+            p.Dtr(true);
         }
 
         private void TryOpen()
@@ -145,6 +176,9 @@ namespace PrismHud.WinTAK.Services
                 var p = ComPort.Open(name, 2000000, true, false, 8 << 20); // DTR on, as RPX's Windows example
                 openedUtc = DateTime.UtcNow;
                 lastFrameUtc = DateTime.MinValue;
+                lastPacketUtc = DateTime.MinValue;
+                lastPingUtc = DateTime.MinValue;
+                configured = false;
                 starts = 0;
                 announced = false;
                 LastError = "";
@@ -191,22 +225,25 @@ namespace PrismHud.WinTAK.Services
             Drop("");
         }
 
-        private void Send(ushort type, int value)
+        private void Send(ushort type, int value, int length = 4)
         {
             var p = port;
             if (p == null || !p.IsOpen) return;
-            var b = new byte[16];
+            var b = new byte[12 + length];
             b[0] = 0x52; b[1] = 0x70; b[2] = 0x78; b[3] = 0x57;
-            b[4] = 4;
+            b[4] = (byte)length;
             b[8] = (byte)type;
             b[9] = (byte)(type >> 8);
             var not = (ushort)~type;
             b[10] = (byte)not;
             b[11] = (byte)(not >> 8);
-            b[12] = (byte)value;
-            b[13] = (byte)(value >> 8);
-            b[14] = (byte)(value >> 16);
-            b[15] = (byte)(value >> 24);
+            if (length == 4)
+            {
+                b[12] = (byte)value;
+                b[13] = (byte)(value >> 8);
+                b[14] = (byte)(value >> 16);
+                b[15] = (byte)(value >> 24);
+            }
             try
             {
                 lock (sendLock) p.Write(b, 0, b.Length);
@@ -264,6 +301,7 @@ namespace PrismHud.WinTAK.Services
                         continue;
                     }
                     if (len - pos < HeaderLen + plen) break; // wait for the rest
+                    lastPacketUtc = DateTime.UtcNow; // the camera is up and talking
                     var body = pos + HeaderLen;
                     if (type == TypeRaw8 && plen >= 8 + FrameBytes)
                     {

@@ -418,7 +418,7 @@ namespace PrismHud.WinTAK.Views
                 var pal = paletteBgr;
                 for (var i = 0; i < f.Length; i++) previewPx[i] = pal[f[i]];
                 previewBmp.WritePixels(new Int32Rect(0, 0, ThermalPipeline.OutW, ThermalPipeline.OutH), previewPx, ThermalPipeline.OutW * 4, 0);
-            }), DispatcherPriority.Background);
+            }), DispatcherPriority.Render); // keep the preview live even while the map is busy
         }
 
         private void Render()
