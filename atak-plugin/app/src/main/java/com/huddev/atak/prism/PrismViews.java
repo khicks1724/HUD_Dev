@@ -21,13 +21,18 @@ final class PrismViews {
     private PrismViews() {
     }
 
-    /** The PRISM mark: white beam in, spectrum out. */
+    /** The PRISM mark (same drawing as the toolbar icon): HUD brackets, prism, beam in, spectrum out. */
     static final class Mark extends View {
+        private static final float[][] RAYS = {{39, 16.5f}, {39.5f, 22.5f}, {39, 28.5f}};
+        private static final int[] RAY_COLORS = {PrismTheme.SPECTRUM[1], PrismTheme.SPECTRUM[3], PrismTheme.SPECTRUM[5]};
         private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Path path = new Path();
 
         Mark(Context c) {
             super(c);
+            p.setStyle(Paint.Style.STROKE);
+            p.setStrokeCap(Paint.Cap.ROUND);
+            p.setStrokeJoin(Paint.Join.ROUND);
         }
 
         @Override
@@ -36,41 +41,24 @@ final class PrismViews {
             c.save();
             c.translate((w - 48 * s) / 2, (h - 48 * s) / 2);
             c.scale(s, s);
-            // spectrum fan
-            float top = 14, band = 3.5f;
-            for (int i = 0; i < PrismTheme.SPECTRUM.length; i++) {
-                path.reset();
-                path.moveTo(28, 22);
-                path.lineTo(46, top + i * band);
-                path.lineTo(46, top + (i + 1) * band);
-                path.close();
-                p.setStyle(Paint.Style.FILL);
-                p.setColor(PrismTheme.SPECTRUM[i]);
-                c.drawPath(path, p);
-            }
-            // incoming beam
-            p.setStyle(Paint.Style.STROKE);
-            p.setStrokeCap(Paint.Cap.ROUND);
-            p.setStrokeWidth(2.2f);
             p.setColor(Color.WHITE);
-            c.drawLine(3, 27, 17, 24, p);
-            // prism
+            p.setStrokeWidth(2.6f);
             path.reset();
-            path.moveTo(24, 8);
-            path.lineTo(37, 34);
-            path.lineTo(11, 34);
-            path.close();
-            p.setStyle(Paint.Style.FILL);
-            p.setColor(Color.rgb(11, 12, 14));
+            path.moveTo(5, 13); path.lineTo(5, 5); path.lineTo(13, 5);
+            path.moveTo(35, 5); path.lineTo(43, 5); path.lineTo(43, 13);
+            path.moveTo(43, 35); path.lineTo(43, 43); path.lineTo(35, 43);
+            path.moveTo(13, 43); path.lineTo(5, 43); path.lineTo(5, 35);
             c.drawPath(path, p);
-            p.setStyle(Paint.Style.STROKE);
-            p.setStrokeJoin(Paint.Join.ROUND);
+            path.reset();
+            path.moveTo(21, 13); path.lineTo(29.5f, 31); path.lineTo(12.5f, 31); path.close();
+            c.drawPath(path, p);
+            p.setStrokeWidth(2.4f);
+            c.drawLine(7, 25.5f, 16.4f, 23.8f, p);
             p.setStrokeWidth(2f);
-            p.setColor(Color.WHITE);
-            c.drawPath(path, p);
-            p.setStrokeWidth(1.2f);
-            p.setColor(0x80FFFFFF);
-            c.drawLine(17, 24, 28, 22, p);
+            for (int i = 0; i < RAYS.length; i++) {
+                p.setColor(RAY_COLORS[i]);
+                c.drawLine(25.3f, 22, RAYS[i][0], RAYS[i][1], p);
+            }
             c.restore();
         }
     }

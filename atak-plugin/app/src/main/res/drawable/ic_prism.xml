@@ -1,19 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- PRISM mark: a white beam entering a triangular prism and splitting into a spectrum -->
+<!-- PRISM toolbar icon, line-only so it stays clean when ATAK tints it:
+     HUD field-of-view brackets around an outlined prism, a beam in and
+     three rays out (the HUD putting TAK tracks into your line of sight). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="48dp"
     android:height="48dp"
     android:viewportWidth="48"
     android:viewportHeight="48">
-    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="2.2" android:strokeLineCap="round"
-        android:pathData="M3,27 L17,24" />
-    <path android:fillColor="#FF7A5CFF" android:pathData="M28,22 L46,14 L46,17.5 Z" />
-    <path android:fillColor="#FF3DA9FF" android:pathData="M28,22 L46,17.5 L46,21 Z" />
-    <path android:fillColor="#FF34D399" android:pathData="M28,22 L46,21 L46,24.5 Z" />
-    <path android:fillColor="#FFFFE65C" android:pathData="M28,22 L46,24.5 L46,28 Z" />
-    <path android:fillColor="#FFFF9F43" android:pathData="M28,22 L46,28 L46,31.5 Z" />
-    <path android:fillColor="#FFFF4D6D" android:pathData="M28,22 L46,31.5 L46,35 Z" />
-    <path android:fillColor="#FF0B0C0E" android:strokeColor="#FFFFFFFF" android:strokeWidth="2"
-        android:strokeLineJoin="round" android:pathData="M24,8 L37,34 L11,34 Z" />
-    <path android:strokeColor="#80FFFFFF" android:strokeWidth="1.2" android:pathData="M17,24 L28,22" />
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="2.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M5,13 V5 H13 M35,5 H43 V13 M43,35 V43 H35 M13,43 H5 V35" />
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="2.6"
+        android:strokeLineJoin="round"
+        android:pathData="M21,13 L29.5,31 L12.5,31 Z" />
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="2.4" android:strokeLineCap="round"
+        android:pathData="M7,25.5 L16.4,23.8" />
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="2" android:strokeLineCap="round"
+        android:pathData="M25.3,22 L39,16.5 M25.3,22 L39.5,22.5 M25.3,22 L39,28.5" />
 </vector>
