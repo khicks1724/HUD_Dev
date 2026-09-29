@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">HUD Link</string>
-    <string name="app_desc">Feeds the TAK HUD over USB-C: this phone\'s GPS and the tracks on the map.</string>
+    <string name="app_name">PRISM</string>
+    <string name="app_desc">PRISM links ATAK to the TAK HUD over USB-C: your GPS and map tracks go to the HUD, its heading and state come back, and you control it from here.</string>
 </resources>

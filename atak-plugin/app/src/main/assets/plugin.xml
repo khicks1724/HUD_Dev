@@ -2,6 +2,6 @@
 <plugin>
     <extension
         type="gov.tak.api.plugin.IPlugin"
-        impl="com.huddev.atak.hudlink.HudLinkPlugin"
+        impl="com.huddev.atak.prism.PrismPlugin"
         singleton="true" />
 </plugin>

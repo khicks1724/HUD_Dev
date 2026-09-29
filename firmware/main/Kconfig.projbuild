@@ -77,12 +77,12 @@ menu "TAK HUD"
         default 400
 
     config HUD_MIRROR_X
-        bool "Mirror display horizontally (prism reflection)"
-        default y
+        bool "Mirror display horizontally"
+        default n
 
     config HUD_MIRROR_Y
-        bool "Mirror display vertically"
-        default n
+        bool "Mirror display vertically (prism reflection; with X off this is the 180-degree-rotated prism orientation)"
+        default y
 
     config HUD_LCD_PCLK_MHZ
         int "LCD SPI clock (MHz)"

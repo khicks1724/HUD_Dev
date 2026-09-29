@@ -271,9 +271,13 @@ static int cmd_mode(int argc, char **argv)
 
 static int cmd_thermal(int argc, char **argv)
 {
-    (void)argc;
-    (void)argv;
-    thermal_cycle_mode();
+    if (argc > 1) { /* thermal <0 off|1 full|2 hot> */
+        app_lock();
+        g_app.thermal_mode = (hud_thermal_mode_t)(atoi(argv[1]) % HUD_THERMAL_COUNT);
+        app_unlock();
+    } else {
+        thermal_cycle_mode();
+    }
     printf("thermal mode %d (available=%d)\n", (int)g_app.thermal_mode, thermal_available());
     return 0;
 }

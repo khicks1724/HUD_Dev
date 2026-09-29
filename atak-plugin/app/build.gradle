@@ -1,4 +1,4 @@
-// HUD Link: ATAK 5.8 CIV plugin that feeds the TAK HUD over USB-C.
+// PRISM: ATAK 5.8 CIV plugin that feeds the TAK HUD over USB-C.
 // Build setup follows the RF_Sim_ATAK project. The ATAK SDK is NOT in this
 // repo: point local.properties at an SDK folder (see ../README.md).
 buildscript {
@@ -46,7 +46,7 @@ allprojects {
 }
 
 android {
-    namespace "com.huddev.atak.hudlink"
+    namespace "com.huddev.atak.prism"
     compileSdk 36
 
     buildFeatures {

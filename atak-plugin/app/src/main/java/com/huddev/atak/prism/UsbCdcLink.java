@@ -1,4 +1,4 @@
-package com.huddev.atak.hudlink;
+package com.huddev.atak.prism;
 
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -31,7 +31,7 @@ final class UsbCdcLink {
 
     static final int VID_WCH = 0x1A86;
     static final int PID_CH343 = 0x55D3;
-    private static final String ACTION_PERMISSION = "com.huddev.atak.hudlink.USB_PERMISSION";
+    private static final String ACTION_PERMISSION = "com.huddev.atak.prism.USB_PERMISSION";
 
     private final Context appContext;
     private final UsbManager usb;
@@ -166,7 +166,7 @@ final class UsbCdcLink {
                     }
                 }
             }
-        }, "hudlink-rx");
+        }, "prism-rx");
         reader.setDaemon(true);
         reader.start();
     }

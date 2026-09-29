@@ -1,4 +1,4 @@
-package com.huddev.atak.hudlink;
+package com.huddev.atak.prism;
 
 import com.atakmap.android.maps.MapGroup;
 import com.atakmap.android.maps.MapItem;
@@ -18,7 +18,7 @@ import java.util.Locale;
  */
 final class HudFeeder {
     static final int MAX_TRACKS = 60;
-    static final double MAX_RANGE_M = 20000;
+    static volatile double maxRangeM = 20000;
 
     static final class Snapshot {
         String fix;
@@ -56,7 +56,7 @@ final class HudFeeder {
                 if (!item.getVisible()) return false;
                 GeoPoint p = item.getPoint();
                 if (p == null || !p.isValid()) return false;
-                if (origin != null && origin.isValid() && origin.distanceTo(p) > MAX_RANGE_M) return false;
+                if (origin != null && origin.isValid() && origin.distanceTo(p) > maxRangeM) return false;
                 String cs = item.getMetaString("callsign", item.getTitle());
                 out.tracks.add(String.format(Locale.US, "trk %s %s %.7f %.7f %.1f %d %s",
                         clean(item.getUID(), "unknown"), clean(type, "a-u-G"),

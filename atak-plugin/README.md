@@ -1,4 +1,4 @@
-# HUD Link: ATAK plugin
+# PRISM: ATAK plugin
 
 When the TAK HUD is plugged into the phone's USB-C port, this plugin sends
 it, as text lines on the HUD's serial console:
@@ -23,8 +23,8 @@ Target: ATAK-CIV 5.8.0.x (built and tested against SDK 5.8.0.4).
 #   sdk.path=<same as atak.sdk.dir>
 $env:JAVA_HOME = "C:\Program Files\Microsoft\jdk-17.0.17.10-hotspot"
 .\gradlew.bat assembleCivDebug
-adb install -r app\build\outputs\apk\civ\debug\ATAK-Plugin-HUDLink-*.apk
+adb install -r app\build\outputs\apk\civ\debug\ATAK-Plugin-PRISM-*.apk
 ```
 
-In ATAK: **Settings → Tools → Plugins → HUD Link → Load**. Tap the HUD Link
+In ATAK: **Settings → Tools → Plugins → PRISM → Load**. Tap the PRISM
 toolbar icon to see its status.
