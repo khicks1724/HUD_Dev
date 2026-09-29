@@ -114,5 +114,35 @@ int main(void)
     s.mode = HUD_MODE_MINIMAL;
     hud_render(&g, &s, t, n);
     write_ppm("preview_minimal.ppm", &g, 2);
+
+    /* Crowded company area over USB (RF sim style): long names, one unnamed
+     * unit, one stale, one in the crosshair. */
+    struct {
+        const char *cs;
+        double e, n, u;
+        hud_affil_t a;
+    } crowd[] = {
+        {"L_WEPS", -120, 1150, 8, HUD_AFFIL_FRIEND},   {"L_CO", -40, 1180, 10, HUD_AFFIL_FRIEND},
+        {"F&R_CO", 90, 1300, 12, HUD_AFFIL_FRIEND},    {"81-1", 160, 1100, 5, HUD_AFFIL_FRIEND},
+        {"81-2", 200, 1150, 6, HUD_AFFIL_FRIEND},      {"SCOUTS", 420, 1500, 20, HUD_AFFIL_FRIEND},
+        {"Neros_Relay_1", -300, 900, -4, HUD_AFFIL_FRIEND}, {"", -250, 1000, 0, HUD_AFFIL_FRIEND},
+        {"OBJ_HAMMER", 60, 2400, 30, HUD_AFFIL_HOSTILE},  {"I_WEPS", -420, 1600, 15, HUD_AFFIL_FRIEND},
+    };
+    const int nc = (int)(sizeof(crowd) / sizeof(crowd[0]));
+    hud_rtarget_t tc[16];
+    for (int i = 0; i < nc; i++) {
+        tc[i] = (hud_rtarget_t){{(float)crowd[i].e, (float)crowd[i].n, (float)crowd[i].u},
+                                crowd[i].a, HUD_DIM_GROUND, crowd[i].cs, i == 7 ? 45.0f : 1.0f, i == 1};
+    }
+    hud_euler_t e2 = {0.0f, 0.5f, 0.0f};
+    s.q = hud_quat_from_euler(&e2);
+    s.mode = HUD_MODE_NORMAL;
+    s.link_state = 0;
+    s.usb_link = true;
+    s.pos_source = "USB";
+    s.hdg_source = "BORE";
+    s.max_labels = 16;
+    hud_render(&g, &s, tc, nc);
+    write_ppm("preview_crowd_usb.ppm", &g, 2);
     return 0;
 }

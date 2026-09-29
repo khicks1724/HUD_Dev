@@ -41,6 +41,7 @@ import gov.tak.platform.marshal.MarshalManager;
  */
 public final class PrismPlugin implements IPlugin {
     private static final long TICK_MS = 1000;
+    private static final long LINE_GAP_MS = 20; // ~90-byte line takes ~8 ms at 115200 baud
     private static final String[] MODES = {"Normal", "Minimal", "Calib", "Status"};
     private static final String[] THERMAL = {"Off", "Full", "Hot"};
     private static final String[] RANGES = {"5 km", "10 km", "20 km", "50 km"};
@@ -159,10 +160,13 @@ public final class PrismPlugin implements IPlugin {
                 fixText = s.fix != null ? formatFix(s.fix) : "—";
                 if (s.fix != null) link.send(s.fix);
                 if (tick % 2 == 0) {
+                    // Paced: a burst overruns the HUD console's UART buffer and
+                    // lines merge (that made the grey track named with a lat/lon).
                     int n = 0;
                     for (String line : s.tracks) {
                         if (!link.send(line)) break;
                         n++;
+                        SystemClock.sleep(LINE_GAP_MS);
                     }
                     tracksSent = n;
                 }

@@ -5,7 +5,10 @@ it, as text lines on the HUD's serial console:
 
 - `fix <lat> <lon> <hae>`: the phone's own GPS, once a second
 - `trk <uid> <type> <lat> <lon> <hae> <stale_s> <callsign>`: every `a-*`
-  unit on the map within 20 km (up to 60), every 2 s
+  unit on the map within the chosen range, nearest 40, every 2 s, paced
+  20 ms apart so the HUD console never merges lines. Spaces in names go
+  as `_`; a unit with no real name (only a UID or coordinates) goes as `-`
+  and the HUD shows just its range
 - `fake off`: once on connect, so the HUD drops its demo targets
 
 The phone also powers the HUD over the same cable. The HUD's CH343 bridge

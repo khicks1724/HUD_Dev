@@ -136,22 +136,22 @@ static int cmd_hdg(int argc, char **argv)
 }
 
 /* Input from a USB-attached ATAK phone (plugin writes these lines):
- *   trk <uid> <type> <lat> <lon> <hae> <stale_s> <callsign...>
- *   fix <lat> <lon> <hae>            (phone GPS = own position)          */
+ *   trk <uid> <type> <lat> <lon> <hae> <stale_s> <callsign>
+ *   fix <lat> <lon> <hae>            (phone GPS = own position)
+ * Exactly 8 tokens: the plugin sends spaces in names as '_' ("-" = no name),
+ * so a longer line is two lines merged on the serial link and is dropped. */
 static int cmd_trk(int argc, char **argv)
 {
-    if (argc < 8) {
-        printf("usage: trk <uid> <type> <lat> <lon> <hae> <stale_s> <callsign...>\n");
+    if (argc != 8) {
+        printf("usage: trk <uid> <type> <lat> <lon> <hae> <stale_s> <callsign>\n");
         return 1;
     }
-    char cs[HUD_COT_CALLSIGN_LEN] = "";
-    size_t used = 0;
-    for (int i = 7; i < argc && used + 1 < sizeof(cs); i++) {
-        const int n = snprintf(cs + used, sizeof(cs) - used, "%s%s", i > 7 ? " " : "", argv[i]);
-        if (n < 0) break;
-        used += (size_t)n;
+    char *e3, *e4;
+    const double lat = strtod(argv[3], &e3), lon = strtod(argv[4], &e4);
+    if (*e3 || *e4 || !app_ingest_track(argv[1], argv[2], lat, lon, atof(argv[5]), atoi(argv[6]), argv[7], "usb")) {
+        printf("trk: rejected\n");
+        return 1;
     }
-    app_ingest_track(argv[1], argv[2], atof(argv[3]), atof(argv[4]), atof(argv[5]), atoi(argv[6]), cs, "usb");
     return 0;
 }
 

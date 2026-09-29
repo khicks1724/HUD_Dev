@@ -83,6 +83,7 @@ void app_set_own(double lat, double lon, double hae, pos_src_t src)
 {
     const int64_t now = app_mono_ms();
     app_lock();
+    if (src == POS_USB) g_app.usb_mono_ms = now;
     const bool current_stale = (now - g_app.own_mono_ms) > 15000;
     if (!g_app.own_valid || current_stale || pos_priority(src) >= pos_priority(g_app.pos_src)) {
         g_app.own = (hud_lla_t){lat, lon, hae};
@@ -117,13 +118,16 @@ void app_ingest_cot(const hud_cot_event_t *ev, const char *via)
     app_unlock();
 }
 
-void app_ingest_track(const char *uid, const char *type, double lat, double lon, double hae, int stale_s,
+bool app_ingest_track(const char *uid, const char *type, double lat, double lon, double hae, int stale_s,
                       const char *callsign, const char *via)
 {
+    if (!uid || !uid[0] || !type || strncmp(type, "a-", 2) != 0) return false;
+    if (!(lat >= -90.0 && lat <= 90.0 && lon >= -180.0 && lon <= 180.0) || (lat == 0.0 && lon == 0.0)) return false;
     hud_cot_event_t ev = {0};
     snprintf(ev.uid, sizeof(ev.uid), "%s", uid);
     snprintf(ev.type, sizeof(ev.type), "%s", type);
-    snprintf(ev.callsign, sizeof(ev.callsign), "%s", callsign && callsign[0] ? callsign : uid);
+    /* "-" = no name: the HUD shows range only rather than a raw UID. */
+    snprintf(ev.callsign, sizeof(ev.callsign), "%s", callsign && strcmp(callsign, "-") != 0 ? callsign : "");
     ev.lat = lat;
     ev.lon = lon;
     ev.hae = hae;
@@ -131,5 +135,16 @@ void app_ingest_track(const char *uid, const char *type, double lat, double lon,
     ev.stale_ms = 1 + (int64_t)(stale_s > 0 ? stale_s : 30) * 1000;
     ev.affil = hud_cot_affil_from_type(ev.type);
     ev.dim = hud_cot_dim_from_type(ev.type);
+    if (strcmp(via, "usb") == 0) {
+        app_lock();
+        g_app.usb_mono_ms = app_mono_ms();
+        app_unlock();
+    }
     app_ingest_cot(&ev, via);
+    return true;
+}
+
+bool app_usb_link_live(int64_t now_ms)
+{
+    return g_app.usb_mono_ms > 0 && now_ms - g_app.usb_mono_ms < 5000;
 }

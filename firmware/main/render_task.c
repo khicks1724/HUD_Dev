@@ -126,7 +126,7 @@ static void render_task(void *arg)
         sc.q = imu_get_quat();
         sc.max_range_m = g_cfg.max_range_m;
         sc.radar_range_m = g_cfg.radar_range_m;
-        sc.max_labels = 6;
+        sc.max_labels = 16;
         sc.hdg_source = imu_heading_source_name();
 
         app_lock();
@@ -134,6 +134,7 @@ static void render_task(void *arg)
         sc.own_pos_valid = g_app.own_valid && (now - g_app.own_mono_ms) < 30000;
         sc.pos_source = app_pos_src_name(g_app.pos_src);
         sc.link_state = g_app.link_state;
+        sc.usb_link = app_usb_link_live(now);
         sc.mode = g_app.mode;
         sc.thermal_mode = g_app.thermal_mode;
         const int n = sc.own_pos_valid ? collect_targets(&own, now) : 0;

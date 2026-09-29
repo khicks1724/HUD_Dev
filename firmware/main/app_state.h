@@ -30,6 +30,7 @@ typedef struct {
     float own_course_deg, own_speed_mps;
 
     int link_state; /* 0 none, 1 wifi, 2 wifi + TAK stream */
+    int64_t usb_mono_ms; /* last fix/track from the phone over USB-C */
     bool time_valid;
     char ip[16];
 
@@ -57,9 +58,14 @@ void app_ingest_cot(const hud_cot_event_t *ev, const char *via);
 /* Set own position from any source. Takes the lock. */
 void app_set_own(double lat, double lon, double hae, pos_src_t src);
 
-/* Track from a line protocol (USB console "trk", hub UART). */
-void app_ingest_track(const char *uid, const char *type, double lat, double lon, double hae, int stale_s,
+/* Track from a line protocol (USB console "trk", hub UART). Rejects
+ * out-of-range positions and non-unit types (e.g. a line garbled on the
+ * serial link) and returns false. */
+bool app_ingest_track(const char *uid, const char *type, double lat, double lon, double hae, int stale_s,
                       const char *callsign, const char *via);
+
+/* Phone fed us over USB in the last few seconds. Caller holds the lock. */
+bool app_usb_link_live(int64_t now_ms);
 
 const char *app_pos_src_name(pos_src_t s);
 void app_set_error(const char *msg);

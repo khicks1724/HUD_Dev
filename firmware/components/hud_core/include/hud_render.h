@@ -65,9 +65,10 @@ typedef struct {
     const char *pos_source;    /* "FAKE", "TAK", "GNSS", "UDP", "MAN" */
     const char *hdg_source;    /* "GYRO", "MAG", "PHONE", "BORE" */
     int link_state;            /* 0 none, 1 wifi, 2 wifi + TAK stream */
+    bool usb_link;             /* phone feeding fix/tracks over USB-C */
     float max_range_m;         /* declutter: hide beyond this */
     float radar_range_m;       /* mini radar scale */
-    int max_labels;
+    int max_labels;            /* label budget; placement also avoids overlaps */
     hud_thermal_mode_t thermal_mode;
     const hud_thermal_t *thermal; /* NULL when no camera frame is available */
     /* status page text */
@@ -76,6 +77,11 @@ typedef struct {
 } hud_scene_t;
 
 void hud_render(gfx_t *g, const hud_scene_t *scene, const hud_rtarget_t *targets, int n_targets);
+
+#define HUD_LABEL_CHARS 10
+
+/* Callsign as shown on the HUD: '_' -> ' ', cut to HUD_LABEL_CHARS ("LONGCALLS."). */
+void hud_label_text(const char *callsign, char *out, int cap);
 
 /* "340m", "1.8km", "12km" */
 void hud_format_range(float m, char *out, int cap);
