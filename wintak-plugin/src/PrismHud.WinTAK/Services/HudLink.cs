@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.IO.Ports;
 using System.Text;
 using System.Threading;
@@ -23,13 +24,24 @@ namespace PrismHud.WinTAK.Services
     /// The HUD's USB-C serial port (CH343, 2 Mbit/s): console text lines and
     /// binary thermal packets out, "@HUD" state lines in. See
     /// firmware/main/usb_link.h for the packet format.
+    ///
+    /// Nothing here blocks the caller: every Send* only queues, and one writer
+    /// thread owns the port. Commands and palettes go first, in order; thermal
+    /// and map pictures are "latest wins" (a newer one replaces one that has
+    /// not gone out yet). So a click in the pane never waits on the serial
+    /// port, even while the HUD is busy (e.g. writing its settings to flash).
     /// </summary>
     internal sealed class HudLink : IDisposable
     {
         internal const int Baud = 2000000;
         private const byte PktThermal = 1, PktPalette = 2, PktThermalOff = 3, PktMapJpeg = 4;
 
-        private readonly object writeLock = new object();
+        private readonly ConcurrentQueue<byte[]> commands = new ConcurrentQueue<byte[]>();
+        private readonly AutoResetEvent wake = new AutoResetEvent(false);
+        private byte[] pendingThermal, pendingMap;
+        private Thread writer;
+        private Timer saveTimer;
+        public int ThermalWritten, MapWritten;
         private readonly StringBuilder rx = new StringBuilder();
         private ComPort port;
         private Timer watchdog;
@@ -49,6 +61,53 @@ namespace PrismHud.WinTAK.Services
         public void Start()
         {
             watchdog = new Timer(_ => Watch(), null, 0, 1000);
+            writer = new Thread(WriteLoop) { IsBackground = true, Name = "PRISM HUD writer" };
+            writer.Start();
+        }
+
+        private void WriteLoop()
+        {
+            while (!disposed)
+            {
+                wake.WaitOne(200);
+                for (;;)
+                {
+                    var p = port;
+                    if (p == null || !p.IsOpen)
+                    {
+                        // nothing can go out; keep commands for the next connection only briefly
+                        while (commands.Count > 64 && commands.TryDequeue(out _)) { }
+                        break;
+                    }
+                    byte[] data;
+                    var kind = 0;
+                    if (commands.TryDequeue(out data)) kind = 1;
+                    else if ((data = Interlocked.Exchange(ref pendingMap, null)) != null) kind = 2;
+                    else if ((data = Interlocked.Exchange(ref pendingThermal, null)) != null) kind = 3;
+                    else break;
+                    try
+                    {
+                        p.Write(data, 0, data.Length);
+                        BytesSent += data.Length;
+                        if (kind == 2) MapWritten++;
+                        else if (kind == 3) ThermalWritten++;
+                    }
+                    catch (Exception e)
+                    {
+                        if (port == p) Drop(e.Message);
+                        break;
+                    }
+                }
+            }
+        }
+
+        /// <summary>Settings changes are saved on the HUD once things settle, not on
+        /// every click: a flash write stalls the HUD's serial input for a moment.</summary>
+        public void SaveSoon()
+        {
+            var t = saveTimer;
+            if (t == null) saveTimer = t = new Timer(_ => SendLine("save"));
+            t.Change(2500, Timeout.Infinite);
         }
 
         private void Watch()
@@ -88,6 +147,7 @@ namespace PrismHud.WinTAK.Services
                 // DTR/RTS drive the ESP32's EN/BOOT through the auto-reset
                 // circuit: keep both released so opening the port doesn't reset it.
                 var p = ComPort.Open(name, Baud, false, false);
+                while (commands.TryDequeue(out _)) { } // anything queued while unplugged is stale
                 port = p;
                 LastError = "";
                 new Thread(() => ReadLoop(p)) { IsBackground = true, Name = "PRISM HUD reader" }.Start();
@@ -190,27 +250,43 @@ namespace PrismHud.WinTAK.Services
 
         public bool SendLine(string line)
         {
-            return Write(Encoding.ASCII.GetBytes(line + "\n"));
+            return Queue(Encoding.ASCII.GetBytes(line + "\n"));
         }
 
+        /// <summary>Queues a thermal frame, replacing one not yet sent.</summary>
         public bool SendThermalFrame(byte[] px, int w, int h, double hfovDeg)
         {
-            return Write(Packet(PktThermal, px, w, h, hfovDeg));
+            if (!IsOpen) return false;
+            Volatile.Write(ref pendingThermal, Packet(PktThermal, px, w, h, hfovDeg));
+            wake.Set();
+            return true;
         }
 
+        /// <summary>Queues a map picture, replacing one not yet sent.</summary>
         public bool SendMapJpeg(byte[] jpg, int w, int h)
         {
-            return Write(Packet(PktMapJpeg, jpg, w, h, 0));
+            if (!IsOpen) return false;
+            Volatile.Write(ref pendingMap, Packet(PktMapJpeg, jpg, w, h, 0));
+            wake.Set();
+            return true;
         }
 
         public bool SendPalette(byte[] rgb768)
         {
-            return Write(Packet(PktPalette, rgb768, 0, 0, 0));
+            return Queue(Packet(PktPalette, rgb768, 0, 0, 0));
         }
 
         public bool SendThermalOff()
         {
-            return Write(Packet(PktThermalOff, new byte[0], 0, 0, 0));
+            return Queue(Packet(PktThermalOff, new byte[0], 0, 0, 0));
+        }
+
+        private bool Queue(byte[] data)
+        {
+            if (!IsOpen) return false;
+            commands.Enqueue(data);
+            wake.Set();
+            return true;
         }
 
         internal static byte[] Packet(byte type, byte[] payload, int w, int h, double hfovDeg)
@@ -241,35 +317,24 @@ namespace PrismHud.WinTAK.Services
             b[at + 1] = (byte)(v >> 8);
         }
 
-        private bool Write(byte[] data)
+        public void Dispose()
         {
+            watchdog?.Dispose();
+            saveTimer?.Dispose();
             var p = port;
-            if (p == null || !p.IsOpen) return false;
-            lock (writeLock)
+            if (p != null && p.IsOpen)
             {
                 try
                 {
-                    p.Write(data, 0, data.Length);
-                    BytesSent += data.Length;
-                    return true;
+                    var bye = Encoding.ASCII.GetBytes("stream off\n");
+                    p.Write(bye, 0, bye.Length);
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    Drop(e.Message);
-                    return false;
                 }
             }
-        }
-
-        public void Dispose()
-        {
             disposed = true;
-            watchdog?.Dispose();
-            if (IsOpen)
-            {
-                SendLine("stream off");
-                SendThermalOff();
-            }
+            wake.Set();
             Drop("");
         }
     }

@@ -68,16 +68,14 @@ namespace PrismHud.WinTAK.Services
                 lastSent = DateTime.UtcNow;
                 var size = full ? 240 : 96;
                 var jpg = Capture(size);
-                if (jpg != null && hud.SendMapJpeg(jpg, size, size))
+                if (jpg != null) hud.SendMapJpeg(jpg, size, size);
+                var dt = (DateTime.UtcNow - fpsT0).TotalSeconds;
+                if (dt >= 2)
                 {
-                    count++;
-                    var dt = (DateTime.UtcNow - fpsT0).TotalSeconds;
-                    if (dt >= 2)
-                    {
-                        SentFps = count / dt;
-                        count = 0;
-                        fpsT0 = DateTime.UtcNow;
-                    }
+                    var written = hud.MapWritten;
+                    SentFps = (written - count) / dt;
+                    count = written;
+                    fpsT0 = DateTime.UtcNow;
                 }
             }
             catch (Exception e)

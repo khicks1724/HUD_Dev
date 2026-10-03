@@ -180,7 +180,7 @@ namespace PrismHud.WinTAK.Views
                 PrismRuntime.Settings.Save();
                 PrismRuntime.Feeder.MaxRangeM = PrismRuntime.RangesM[i];
                 Send("range " + ((int)PrismRuntime.RangesM[i]).ToString(CultureInfo.InvariantCulture));
-                Send("save");
+                PrismRuntime.Hud.SaveSoon();
             });
             segRange.Select(PrismRuntime.Settings.RangeIndex);
             col.Children.Add(segRange);
@@ -298,8 +298,8 @@ namespace PrismHud.WinTAK.Views
             col.Children.Add(Label("Align"));
             col.Children.Add(Space(6));
             var a1 = new UniformGrid { Columns = 3 };
-            a1.Children.Add(Btn("Level trim", () => { Send("cal trim"); Send("save"); Note("Level trim saved: hold the HUD level on the true horizon when you click it."); }, 0));
-            a1.Children.Add(Btn("Flip IMU", () => { Send("cal flip"); Send("save"); Note("IMU turned 180° and saved: use if pitch and roll move the wrong way. Click again to undo."); }, 1));
+            a1.Children.Add(Btn("Level trim", () => { Send("cal trim"); PrismRuntime.Hud.SaveSoon(); Note("Level trim saved: hold the HUD level on the true horizon when you click it."); }, 0));
+            a1.Children.Add(Btn("Flip IMU", () => { Send("cal flip"); PrismRuntime.Hud.SaveSoon(); Note("IMU turned 180° and saved: use if pitch and roll move the wrong way. Click again to undo."); }, 1));
             a1.Children.Add(Btn("Save", () => { Send("save"); Note("Saved on the HUD."); }, 2));
             col.Children.Add(a1);
             col.Children.Add(Space(10));
@@ -343,7 +343,7 @@ namespace PrismHud.WinTAK.Views
             var sr = MiniSlider(cfg, "Thermal roll (deg)", -10, 10);
             Action send = () => Send(string.Format(CultureInfo.InvariantCulture, "thal {0:F1} {1:F1} {2:F2}", sx.Value, sy.Value, sr.Value));
             foreach (var s in new[] { sx, sy, sr })
-                s.PreviewMouseUp += (o, e) => { send(); Send("save"); };
+                s.PreviewMouseUp += (o, e) => { send(); PrismRuntime.Hud.SaveSoon(); };
             return Tile("Thermal alignment", cfg);
         }
 
@@ -393,7 +393,7 @@ namespace PrismHud.WinTAK.Views
         {
             layersSentUtc = DateTime.UtcNow;
             Send(cmd);
-            Send("save");
+            PrismRuntime.Hud.SaveSoon();
             ShowLayers(mask);
         }
 
@@ -428,7 +428,7 @@ namespace PrismHud.WinTAK.Views
                 var pal = paletteBgr;
                 for (var i = 0; i < f.Length; i++) previewPx[i] = pal[f[i]];
                 previewBmp.WritePixels(new Int32Rect(0, 0, ThermalPipeline.OutW, ThermalPipeline.OutH), previewPx, ThermalPipeline.OutW * 4, 0);
-            }), DispatcherPriority.Render); // keep the preview live even while the map is busy
+            }), DispatcherPriority.Background); // below input: clicks always win over preview frames
         }
 
         private void Render()

@@ -19,14 +19,12 @@ namespace PrismHud.WinTAK.Services
         private readonly byte[] small = new byte[OutW * OutH];
         private readonly byte[] preview = new byte[OutW * OutH];
         private DateTime lastSent = DateTime.MinValue, lastPreview = DateTime.MinValue;
-        private int sending; // 1 while a frame is being written
+        private int lastWritten;
 
         public double CameraHfovDeg = 32.0;
         public double TargetFps = 15;
         public bool SendToHud = true;
-        public int FramesSent;
         public double SentFps;
-        private int sentCount;
         private DateTime fpsT0 = DateTime.UtcNow;
 
         /// <summary>160x120 intensity copy for the pane preview, ~10 Hz.</summary>
@@ -62,32 +60,17 @@ namespace PrismHud.WinTAK.Services
                 Buffer.BlockCopy(small, 0, preview, 0, small.Length);
                 PreviewReady?.Invoke(preview);
             }
-            if (!wantSend || Interlocked.Exchange(ref sending, 1) == 1) return;
+            if (!wantSend) return;
             lastSent = now;
-            var copy = (byte[])small.Clone();
-            var fov = EffectiveHfov;
-            ThreadPool.QueueUserWorkItem(_ =>
+            hud.SendThermalFrame((byte[])small.Clone(), OutW, OutH, EffectiveHfov); // queued, never blocks
+            var dt = (now - fpsT0).TotalSeconds;
+            if (dt >= 2)
             {
-                try
-                {
-                    if (hud.SendThermalFrame(copy, OutW, OutH, fov))
-                    {
-                        FramesSent++;
-                        sentCount++;
-                        var dt = (DateTime.UtcNow - fpsT0).TotalSeconds;
-                        if (dt >= 2)
-                        {
-                            SentFps = sentCount / dt;
-                            sentCount = 0;
-                            fpsT0 = DateTime.UtcNow;
-                        }
-                    }
-                }
-                finally
-                {
-                    Interlocked.Exchange(ref sending, 0);
-                }
-            });
+                var written = hud.ThermalWritten;
+                SentFps = (written - lastWritten) / dt;
+                lastWritten = written;
+                fpsT0 = now;
+            }
         }
 
         internal static void Downscale(byte[] src, byte[] dst)

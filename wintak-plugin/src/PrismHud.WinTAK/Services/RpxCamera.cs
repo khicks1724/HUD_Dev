@@ -208,16 +208,19 @@ namespace PrismHud.WinTAK.Services
             Send(TypeStreamEnable, 0x02); // 8-bit stream
         }
 
+        // Called from the pane (UI thread): send on the pool so a busy camera
+        // port can never stall WinTAK's window.
         public void SetEnhance(int level)
         {
             Enhance = level;
-            Send(TypeEnhance, level);
+            ThreadPool.QueueUserWorkItem(_ => Send(TypeEnhance, level));
         }
 
         public void SetZoom(int level)
         {
             Zoom = Math.Max(0, Math.Min(2, level));
-            Send(TypeZoom, Zoom);
+            var z = Zoom;
+            ThreadPool.QueueUserWorkItem(_ => Send(TypeZoom, z));
         }
 
         public void Reconnect()
